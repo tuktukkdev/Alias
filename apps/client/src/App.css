@@ -74,7 +74,74 @@
 }
 
 .gamePanel {
+  width: min(1100px, 100%);
   gap: 0.85rem;
+}
+
+.gameLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  gap: 0.75rem;
+}
+
+.gameColumn {
+  border: 1px solid #304157;
+  border-radius: 12px;
+  background: #152235;
+  padding: 0.75rem;
+}
+
+.scoreboardSection {
+  display: grid;
+  gap: 0.1rem;
+  align-content: start;
+}
+
+.futureColumn {
+  min-height: 240px;
+  background: repeating-linear-gradient(
+    45deg,
+    #121f31,
+    #121f31 14px,
+    #17263b 14px,
+    #17263b 28px
+  );
+}
+
+.chatSection {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.scoreboardTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #32435c;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #182336;
+  margin: 0;
+}
+
+.scoreboardTable th,
+.scoreboardTable td {
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+}
+
+.scoreboardTable thead th {
+  background: #223149;
+  color: #d8e6ff;
+  font-weight: 700;
+}
+
+.scoreboardTable tbody tr {
+  border-top: 1px solid #2d3f57;
+  color: #eaf2ff;
+}
+
+.highlightedPlayerRow {
+  background: #2a4b70;
 }
 
 .title {
@@ -122,6 +189,16 @@
   font-size: 0.92rem;
 }
 
+.turnTimer {
+  margin: 0;
+  color: #b6dcff;
+  font-size: 0.95rem;
+}
+
+.turnTimer strong {
+  color: #e7f5ff;
+}
+
 .startedText {
   margin: 0;
   color: #8de3b4;
@@ -134,7 +211,7 @@
   padding: 0;
   display: grid;
   gap: 0.55rem;
-  max-height: 42vh;
+  max-height: 36vh;
   overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: #4a5ea0 #131f31;
@@ -165,15 +242,15 @@
   background: #19273a;
 }
 
-.ownMessage {
-  background: #21415f;
+.chatMeta {
+  margin: 0 0 0.16rem;
+  color: #a2bddf;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-.chatAuthor {
-  margin: 0 0 0.2rem;
-  color: #9ec5f0;
-  font-size: 0.84rem;
-  font-weight: 700;
+.ownMessage {
+  background: #21415f;
 }
 
 .chatText {
@@ -214,5 +291,15 @@
 
   .chatComposer {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .gameLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .futureColumn {
+    min-height: 120px;
   }
 }

@@ -96,8 +96,12 @@ function App() {
   const [statusMessage, setStatusMessage] = useState('')
   const [chatInput, setChatInput] = useState('')
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [activeTurnIndex, setActiveTurnIndex] = useState(0)
+  const [turnSecondsLeft, setTurnSecondsLeft] = useState(0)
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
+  const turnCycleKeyRef = useRef('')
+  const turnCycleStartedAtRef = useRef(0)
 
   const isHost = useMemo(() => {
     if (!roomState || !playerId) {
@@ -302,6 +306,52 @@ function App() {
     chatListRef.current.scrollTop = chatListRef.current.scrollHeight
   }, [chatMessages, roomState?.started])
 
+  useEffect(() => {
+    if (!roomState?.started) {
+      turnCycleKeyRef.current = ''
+      turnCycleStartedAtRef.current = 0
+      setActiveTurnIndex(0)
+      setTurnSecondsLeft(0)
+      return
+    }
+
+    const playerCount = roomState.room.players.length
+    if (playerCount === 0) {
+      turnCycleKeyRef.current = ''
+      turnCycleStartedAtRef.current = 0
+      setActiveTurnIndex(0)
+      setTurnSecondsLeft(0)
+      return
+    }
+
+    const turnDuration = roomState.room.settings.timer
+    const cycleKey = `${roomState.roomId}:${playerCount}:${turnDuration}`
+
+    if (turnCycleKeyRef.current !== cycleKey) {
+      turnCycleKeyRef.current = cycleKey
+      turnCycleStartedAtRef.current = Date.now()
+    }
+
+    const updateTurnFromClock = () => {
+      const elapsedSeconds = Math.floor((Date.now() - turnCycleStartedAtRef.current) / 1000)
+      const turnsPassed = Math.floor(elapsedSeconds / turnDuration)
+      const secondsIntoTurn = elapsedSeconds % turnDuration
+      const nextTurnIndex = turnsPassed % playerCount
+      const secondsLeft = turnDuration - secondsIntoTurn
+
+      setActiveTurnIndex(nextTurnIndex)
+      setTurnSecondsLeft(secondsLeft)
+    }
+
+    updateTurnFromClock()
+
+    const intervalId = window.setInterval(() => {
+      updateTurnFromClock()
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [roomState?.started, roomState?.roomId, roomState?.room.players.length, roomState?.room.settings.timer])
+
   const createRoom = async () => {
     const trimmedName = name.trim()
     if (!trimmedName) {
@@ -416,46 +466,84 @@ function App() {
   }
 
   if (roomState?.started) {
+    const activePlayer = roomState.room.players[activeTurnIndex]
+
     return (
       <main className="screen">
         <section className="panel gamePanel">
           <h1 className="title">Game Room {roomState.roomId}</h1>
-          <p className="hintText">Chat only mode for now.</p>
+          <p className="turnTimer">
+            Time Left: <strong>{turnSecondsLeft}s</strong>
+            {activePlayer ? ` | Turn: ${activePlayer.name}` : ''}
+          </p>
 
-          <ul className="chatList" ref={chatListRef}>
-            {chatMessages.map((message) => (
-              <li
-                key={message.id}
-                className={`chatItem ${message.playerId === playerId ? 'ownMessage' : ''}`}
+          <div className="gameLayout">
+            <div className="gameColumn scoreboardSection">
+              <h2 className="sectionTitle">Players Score</h2>
+              <table className="scoreboardTable">
+                <thead>
+                  <tr>
+                    <th scope="col">Player</th>
+                    <th scope="col">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roomState.room.players.map((player, index) => (
+                    <tr
+                      key={player.id}
+                      className={index === activeTurnIndex ? 'highlightedPlayerRow' : ''}
+                    >
+                      <td>
+                        {player.name}
+                        {player.id === playerId ? ' (You)' : ''}
+                      </td>
+                      <td>{player.score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="gameColumn futureColumn" />
+
+            <div className="gameColumn chatSection">
+              <h2 className="sectionTitle">Chat</h2>
+              <ul className="chatList" ref={chatListRef}>
+                {chatMessages.map((message) => (
+                  <li
+                    key={message.id}
+                    className={`chatItem ${message.playerId === playerId ? 'ownMessage' : ''}`}
+                  >
+                    <p className="chatMeta">
+                      {message.playerName}
+                      {message.playerId === playerId ? ' (You)' : ''}
+                    </p>
+                    <p className="chatText">{message.text}</p>
+                  </li>
+                ))}
+              </ul>
+
+              <form
+                className="chatComposer"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  void sendChatMessage()
+                }}
               >
-                <p className="chatAuthor">
-                  {message.playerName}
-                  {message.playerId === playerId ? ' (You)' : ''}
-                </p>
-                <p className="chatText">{message.text}</p>
-              </li>
-            ))}
-          </ul>
+                <input
+                  className="input"
+                  value={chatInput}
+                  onChange={(event) => setChatInput(event.target.value)}
+                  placeholder="Type a message"
+                />
+                <button type="submit" className="playButton">
+                  Send
+                </button>
+              </form>
 
-          <form
-            className="chatComposer"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void sendChatMessage()
-            }}
-          >
-            <input
-              className="input"
-              value={chatInput}
-              onChange={(event) => setChatInput(event.target.value)}
-              placeholder="Type a message"
-            />
-            <button type="submit" className="playButton">
-              Send
-            </button>
-          </form>
-
-          {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
+              {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
+            </div>
+          </div>
         </section>
       </main>
     )
