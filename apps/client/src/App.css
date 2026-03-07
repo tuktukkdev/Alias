@@ -1,0 +1,218 @@
+.screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #2f3a4a;
+  background: #101925cc;
+  backdrop-filter: blur(4px);
+}
+
+.label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #d9e3f1;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid #39475b;
+  background: #182334;
+  font: inherit;
+  color: #eaf2ff;
+}
+
+.input:focus {
+  outline: 2px solid #32b0d5;
+  outline-offset: 1px;
+}
+
+.playButton {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #1f8fb3;
+  color: #f2fbff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.playButton:hover {
+  background: #187392;
+}
+
+.playButton:disabled {
+  background: #355664;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.playButton:focus-visible {
+  outline: 2px solid #56c5e8;
+  outline-offset: 2px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.roomPanel {
+  gap: 1rem;
+}
+
+.gamePanel {
+  gap: 0.85rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #f0f6ff;
+}
+
+.sectionTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #d9e3f1;
+}
+
+.timerRow {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.timerRow input[type='range'] {
+  width: 100%;
+}
+
+.playerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.playerItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #19273a;
+  color: #e9f2ff;
+}
+
+.hintText {
+  margin: 0;
+  color: #99afcb;
+  font-size: 0.92rem;
+}
+
+.startedText {
+  margin: 0;
+  color: #8de3b4;
+  font-weight: 700;
+}
+
+.chatList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+  max-height: 42vh;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4a5ea0 #131f31;
+}
+
+.chatList::-webkit-scrollbar {
+  width: 11px;
+}
+
+.chatList::-webkit-scrollbar-track {
+  background: #131f31;
+  border-radius: 10px;
+}
+
+.chatList::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2b4f8f 0%, #544096 100%);
+  border: 2px solid #131f31;
+  border-radius: 10px;
+}
+
+.chatList::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3761ac 0%, #6650b3 100%);
+}
+
+.chatItem {
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #19273a;
+}
+
+.ownMessage {
+  background: #21415f;
+}
+
+.chatAuthor {
+  margin: 0 0 0.2rem;
+  color: #9ec5f0;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.chatText {
+  margin: 0;
+  color: #eaf2ff;
+}
+
+.chatComposer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+}
+
+.createRoomButton {
+  border: 1px solid #39597a;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #13243a;
+  color: #d9e9ff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.createRoomButton:hover {
+  background: #1a3351;
+}
+
+.createRoomButton:focus-visible {
+  outline: 2px solid #56c5e8;
+  outline-offset: 2px;
+}
+
+@media (max-width: 460px) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
+
+  .chatComposer {
+    grid-template-columns: 1fr;
+  }
+}
