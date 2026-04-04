@@ -22,7 +22,12 @@ interface GameRoom {
 interface RoomRecord {
   room: GameRoom;
   started: boolean;
+  startRequested: boolean;
+  startedAt: string | null;
+  connectedPlayerIds: Set<string>;
   chatMessages: ChatMessage[];
+  turnSecondsRemaining: number | null;
+  currentTurnPlayerId: string | null;
 }
 
 interface ChatMessage {
@@ -39,10 +44,27 @@ interface ChatBroadcastEvent {
   message: ChatMessage;
 }
 
+interface RoomStateBroadcastEvent {
+  type: "room_state";
+  roomId: string;
+  room: GameRoom;
+  started: boolean;
+  startRequested: boolean;
+  startedAt: string | null;
+  connectedPlayerIds: string[];
+  turnSecondsRemaining: number | null;
+  currentTurnPlayerId: string | null;
+}
+
+type RoomBroadcastEvent = ChatBroadcastEvent | RoomStateBroadcastEvent;
+
 const app = express();
 const rooms = new Map<string, RoomRecord>();
 const roomSockets = new Map<string, Set<WebSocket>>();
 const socketRooms = new WeakMap<WebSocket, string>();
+const socketPlayers = new WeakMap<WebSocket, string>();
+const roomTickIntervals = new Map<string, NodeJS.Timeout>();
+const GAME_START_DELAY_MS = 3000;
 
 app.use(express.json());
 app.use((_: Request, res: Response, next) => {
@@ -89,7 +111,122 @@ const removeSocketFromRoom = (socket: WebSocket): void => {
   }
 };
 
-const broadcastToRoom = (roomId: string, event: ChatBroadcastEvent): void => {
+const buildRoomStatePayload = (
+  roomId: string,
+  record: RoomRecord,
+): Omit<RoomStateBroadcastEvent, "type"> => ({
+  roomId,
+  room: record.room,
+  started: record.started,
+  startRequested: record.startRequested,
+  startedAt: record.startedAt,
+  connectedPlayerIds: [...record.connectedPlayerIds],
+  turnSecondsRemaining: record.turnSecondsRemaining,
+  currentTurnPlayerId: record.currentTurnPlayerId,
+});
+
+const clearRoomTickInterval = (roomId: string): void => {
+  const interval = roomTickIntervals.get(roomId);
+  if (!interval) {
+    return;
+  }
+
+  clearInterval(interval);
+  roomTickIntervals.delete(roomId);
+};
+
+const getNextTurnPlayerId = (record: RoomRecord): string | null => {
+  const { players } = record.room;
+  if (players.length === 0) {
+    return null;
+  }
+
+  if (!record.currentTurnPlayerId) {
+    return players[0].id;
+  }
+
+  const currentIndex = players.findIndex((player) => player.id === record.currentTurnPlayerId);
+  if (currentIndex === -1) {
+    return players[0].id;
+  }
+
+  const nextIndex = (currentIndex + 1) % players.length;
+  return players[nextIndex].id;
+};
+
+const startRoomTickLoop = (roomId: string): void => {
+  if (roomTickIntervals.has(roomId)) {
+    return;
+  }
+
+  const interval = setInterval(() => {
+    const record = rooms.get(roomId);
+    if (!record) {
+      clearRoomTickInterval(roomId);
+      return;
+    }
+
+    if (!record.started || !record.startedAt) {
+      return;
+    }
+
+    const startedAtMs = Date.parse(record.startedAt);
+    if (Number.isNaN(startedAtMs) || Date.now() < startedAtMs) {
+      return;
+    }
+
+    if (!record.currentTurnPlayerId) {
+      record.currentTurnPlayerId = getNextTurnPlayerId(record);
+      record.turnSecondsRemaining = record.room.settings.timer;
+      broadcastRoomState(roomId, record);
+      return;
+    }
+
+    if (record.turnSecondsRemaining === null) {
+      record.turnSecondsRemaining = record.room.settings.timer;
+    }
+
+    record.turnSecondsRemaining = Math.max(0, record.turnSecondsRemaining - 1);
+
+    if (record.turnSecondsRemaining === 0) {
+      record.currentTurnPlayerId = getNextTurnPlayerId(record);
+      record.turnSecondsRemaining = record.room.settings.timer;
+    }
+
+    broadcastRoomState(roomId, record);
+  }, 1000);
+
+  roomTickIntervals.set(roomId, interval);
+};
+
+const allPlayersConnected = (record: RoomRecord): boolean => {
+  return record.room.players.every((player) => record.connectedPlayerIds.has(player.id));
+};
+
+const hasAnotherSocketForPlayer = (
+  roomId: string,
+  playerId: string,
+  ignoredSocket: WebSocket,
+): boolean => {
+  const sockets = roomSockets.get(roomId);
+  if (!sockets) {
+    return false;
+  }
+
+  for (const socket of sockets) {
+    if (socket === ignoredSocket) {
+      continue;
+    }
+
+    if (socketPlayers.get(socket) === playerId && socket.readyState === WebSocket.OPEN) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const broadcastToRoom = (roomId: string, event: RoomBroadcastEvent): void => {
   const sockets = roomSockets.get(roomId);
   if (!sockets) {
     return;
@@ -101,6 +238,28 @@ const broadcastToRoom = (roomId: string, event: ChatBroadcastEvent): void => {
       socket.send(payload);
     }
   }
+};
+
+const broadcastRoomState = (roomId: string, record: RoomRecord): void => {
+  broadcastToRoom(roomId, {
+    type: "room_state",
+    ...buildRoomStatePayload(roomId, record),
+  });
+};
+
+const startRoomGame = (roomId: string, record: RoomRecord): void => {
+  if (record.started) {
+    return;
+  }
+
+  // Add a short lead time so all clients can render the start frame before timer ticks.
+  record.started = true;
+  record.startRequested = false;
+  record.startedAt = new Date(Date.now() + GAME_START_DELAY_MS).toISOString();
+  record.turnSecondsRemaining = record.room.settings.timer;
+  record.currentTurnPlayerId = record.room.players[0]?.id ?? null;
+  broadcastRoomState(roomId, record);
+  startRoomTickLoop(roomId);
 };
 
 app.get("/", (_: Request, res: Response) => {
@@ -132,8 +291,27 @@ app.post("/rooms", (req: Request, res: Response) => {
     },
   };
 
-  rooms.set(roomId, { room, started: false, chatMessages: [] });
-  return res.status(201).json({ roomId, playerId: player.id, room });
+  rooms.set(roomId, {
+    room,
+    started: false,
+    startRequested: false,
+    startedAt: null,
+    connectedPlayerIds: new Set(),
+    chatMessages: [],
+    turnSecondsRemaining: null,
+    currentTurnPlayerId: null,
+  });
+  return res.status(201).json({
+    roomId,
+    playerId: player.id,
+    room,
+    started: false,
+    startRequested: false,
+    startedAt: null,
+    connectedPlayerIds: [],
+    turnSecondsRemaining: null,
+    currentTurnPlayerId: null,
+  });
 });
 
 app.post("/rooms/:roomId/join", (req: Request, res: Response) => {
@@ -157,12 +335,20 @@ app.post("/rooms/:roomId/join", (req: Request, res: Response) => {
       }
 
       return res.json({
-        roomId,
         playerId: existingPlayer.id,
-        room: record.room,
-        started: record.started,
+        ...buildRoomStatePayload(roomId, record),
       });
     }
+
+    if (record.started) {
+      return res.status(403).json({ error: "game already started; invalid playerId" });
+    }
+  }
+
+  if (record.started) {
+    return res
+      .status(403)
+      .json({ error: "game already started; only existing players can reconnect" });
   }
 
   if (!name) {
@@ -176,7 +362,11 @@ app.post("/rooms/:roomId/join", (req: Request, res: Response) => {
   };
 
   record.room.players.push(player);
-  return res.status(201).json({ roomId, playerId: player.id, room: record.room });
+  broadcastRoomState(roomId, record);
+  return res.status(201).json({
+    playerId: player.id,
+    ...buildRoomStatePayload(roomId, record),
+  });
 });
 
 app.get("/rooms/:roomId", (req: Request, res: Response) => {
@@ -187,7 +377,7 @@ app.get("/rooms/:roomId", (req: Request, res: Response) => {
     return res.status(404).json({ error: "room not found" });
   }
 
-  return res.json({ roomId, room: record.room, started: record.started });
+  return res.json(buildRoomStatePayload(roomId, record));
 });
 
 app.patch("/rooms/:roomId/settings", (req: Request, res: Response) => {
@@ -209,7 +399,8 @@ app.patch("/rooms/:roomId/settings", (req: Request, res: Response) => {
   }
 
   record.room.settings.timer = Math.max(10, Math.min(300, timer));
-  return res.json({ roomId, room: record.room });
+  broadcastRoomState(roomId, record);
+  return res.json(buildRoomStatePayload(roomId, record));
 });
 
 app.post("/rooms/:roomId/start", (req: Request, res: Response) => {
@@ -229,8 +420,15 @@ app.post("/rooms/:roomId/start", (req: Request, res: Response) => {
     return res.status(400).json({ error: "at least 2 players are required to start" });
   }
 
-  record.started = true;
-  return res.json({ roomId, room: record.room, started: record.started });
+  record.startRequested = true;
+
+  if (allPlayersConnected(record)) {
+    startRoomGame(roomId, record);
+  } else {
+    broadcastRoomState(roomId, record);
+  }
+
+  return res.json(buildRoomStatePayload(roomId, record));
 });
 
 app.get("/rooms/:roomId/chat", (req: Request, res: Response) => {
@@ -299,9 +497,34 @@ wss.on("connection", (socket: WebSocket, req: IncomingMessage) => {
   }
 
   socketRooms.set(socket, roomId);
+  socketPlayers.set(socket, playerId);
   addSocketToRoom(roomId, socket);
 
+  record.connectedPlayerIds.add(playerId);
+
+  if (record.startRequested && !record.started && allPlayersConnected(record)) {
+    startRoomGame(roomId, record);
+  } else {
+    broadcastRoomState(roomId, record);
+  }
+
   socket.on("close", () => {
+    const closedRoomId = socketRooms.get(socket);
+    const closedPlayerId = socketPlayers.get(socket);
     removeSocketFromRoom(socket);
+
+    if (!closedRoomId || !closedPlayerId) {
+      return;
+    }
+
+    const roomRecord = rooms.get(closedRoomId);
+    if (!roomRecord) {
+      return;
+    }
+
+    if (!hasAnotherSocketForPlayer(closedRoomId, closedPlayerId, socket)) {
+      roomRecord.connectedPlayerIds.delete(closedPlayerId);
+      broadcastRoomState(closedRoomId, roomRecord);
+    }
   });
 });

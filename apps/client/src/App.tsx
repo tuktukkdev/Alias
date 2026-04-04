@@ -22,6 +22,9 @@ interface RoomState {
   roomId: string
   room: GameRoom
   started?: boolean
+  startRequested?: boolean
+  startedAt?: string | null
+  connectedPlayerIds?: string[]
 }
 
 interface ChatMessage {
@@ -98,6 +101,7 @@ function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [activeTurnIndex, setActiveTurnIndex] = useState(0)
   const [turnSecondsLeft, setTurnSecondsLeft] = useState(0)
+  const [gameStartsIn, setGameStartsIn] = useState(0)
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
   const turnCycleKeyRef = useRef('')
@@ -111,8 +115,13 @@ function App() {
   }, [playerId, roomState])
 
   const canStartGame = useMemo(() => {
-    return isHost && (roomState?.room.players.length ?? 0) > 1
-  }, [isHost, roomState?.room.players.length])
+    return (
+      isHost &&
+      !roomState?.started &&
+      !roomState?.startRequested &&
+      (roomState?.room.players.length ?? 0) > 1
+    )
+  }, [isHost, roomState?.room.players.length, roomState?.started, roomState?.startRequested])
 
   const joinRoom = async (options?: {
     playerName?: string
@@ -152,6 +161,14 @@ function App() {
       return
     }
 
+        if (response.status === 403) {
+      setStatusMessage("Game already started; only existing players can reconnect.")
+      if (options?.isAutoReconnect) {
+        clearStoredRoomSession()
+      }
+      return
+    }
+
     if (!response.ok) {
       setStatusMessage('Failed to join room. Is the server running on port 3000?')
       return
@@ -161,7 +178,14 @@ function App() {
     setName(trimmedName)
     setRoomCode(data.roomId)
     setPlayerId(data.playerId)
-    setRoomState({ roomId: data.roomId, room: data.room, started: data.started })
+    setRoomState({
+      roomId: data.roomId,
+      room: data.room,
+      started: data.started,
+      startRequested: data.startRequested,
+      startedAt: data.startedAt,
+      connectedPlayerIds: data.connectedPlayerIds,
+    })
     setChatMessages([])
     setStoredRoomSession({ roomId: data.roomId, playerId: data.playerId, name: trimmedName })
     pushRoomPath(data.roomId)
@@ -251,7 +275,7 @@ function App() {
   }, [roomState?.roomId, roomState?.started])
 
   useEffect(() => {
-    if (!roomState?.started || !playerId) {
+    if (!roomState || !playerId) {
       return
     }
 
@@ -265,6 +289,24 @@ function App() {
         const data = JSON.parse(event.data) as {
           type?: string
           message?: ChatMessage
+          roomId?: string
+          room?: GameRoom
+          started?: boolean
+          startRequested?: boolean
+          startedAt?: string | null
+          connectedPlayerIds?: string[]
+        }
+
+        if (data.type === 'room_state' && data.roomId === roomState.roomId && data.room) {
+          setRoomState({
+            roomId: data.roomId,
+            room: data.room,
+            started: data.started,
+            startRequested: data.startRequested,
+            startedAt: data.startedAt,
+            connectedPlayerIds: data.connectedPlayerIds,
+          })
+          return
         }
 
         if (data.type !== 'chat_message' || !data.message) {
@@ -296,7 +338,7 @@ function App() {
         chatSocketRef.current = null
       }
     }
-  }, [playerId, roomState?.roomId, roomState?.started])
+  }, [playerId, roomState?.roomId])
 
   useEffect(() => {
     if (!roomState?.started || !chatListRef.current) {
@@ -312,6 +354,7 @@ function App() {
       turnCycleStartedAtRef.current = 0
       setActiveTurnIndex(0)
       setTurnSecondsLeft(0)
+      setGameStartsIn(0)
       return
     }
 
@@ -321,18 +364,37 @@ function App() {
       turnCycleStartedAtRef.current = 0
       setActiveTurnIndex(0)
       setTurnSecondsLeft(0)
+      setGameStartsIn(0)
       return
     }
 
     const turnDuration = roomState.room.settings.timer
-    const cycleKey = `${roomState.roomId}:${playerCount}:${turnDuration}`
+    const startedAtMs = roomState.startedAt ? Date.parse(roomState.startedAt) : NaN
+    if (!Number.isFinite(startedAtMs)) {
+      setActiveTurnIndex(0)
+      setTurnSecondsLeft(turnDuration)
+      setGameStartsIn(0)
+      return
+    }
+
+    const cycleKey = `${roomState.roomId}:${playerCount}:${turnDuration}:${roomState.startedAt ?? ''}`
 
     if (turnCycleKeyRef.current !== cycleKey) {
       turnCycleKeyRef.current = cycleKey
-      turnCycleStartedAtRef.current = Date.now()
+      turnCycleStartedAtRef.current = startedAtMs
     }
 
     const updateTurnFromClock = () => {
+      const millisecondsUntilStart = turnCycleStartedAtRef.current - Date.now()
+      if (millisecondsUntilStart > 0) {
+        setGameStartsIn(Math.ceil(millisecondsUntilStart / 1000))
+        setActiveTurnIndex(0)
+        setTurnSecondsLeft(turnDuration)
+        return
+      }
+
+      setGameStartsIn(0)
+
       const elapsedSeconds = Math.floor((Date.now() - turnCycleStartedAtRef.current) / 1000)
       const turnsPassed = Math.floor(elapsedSeconds / turnDuration)
       const secondsIntoTurn = elapsedSeconds % turnDuration
@@ -350,7 +412,13 @@ function App() {
     }, 1000)
 
     return () => window.clearInterval(intervalId)
-  }, [roomState?.started, roomState?.roomId, roomState?.room.players.length, roomState?.room.settings.timer])
+  }, [
+    roomState?.started,
+    roomState?.roomId,
+    roomState?.room.players.length,
+    roomState?.room.settings.timer,
+    roomState?.startedAt,
+  ])
 
   const createRoom = async () => {
     const trimmedName = name.trim()
@@ -375,7 +443,14 @@ function App() {
     setName(trimmedName)
     setRoomCode(data.roomId)
     setPlayerId(data.playerId)
-    setRoomState({ roomId: data.roomId, room: data.room, started: data.started })
+    setRoomState({
+      roomId: data.roomId,
+      room: data.room,
+      started: data.started,
+      startRequested: data.startRequested,
+      startedAt: data.startedAt,
+      connectedPlayerIds: data.connectedPlayerIds,
+    })
     setChatMessages([])
     setStoredRoomSession({ roomId: data.roomId, playerId: data.playerId, name: trimmedName })
     pushRoomPath(data.roomId)
@@ -410,7 +485,14 @@ function App() {
     }
 
     const data = (await response.json()) as RoomState
-    setRoomState({ roomId: data.roomId, room: data.room, started: data.started })
+    setRoomState({
+      roomId: data.roomId,
+      room: data.room,
+      started: data.started,
+      startRequested: data.startRequested,
+      startedAt: data.startedAt,
+      connectedPlayerIds: data.connectedPlayerIds,
+    })
   }
 
   const startGame = async () => {
@@ -430,8 +512,21 @@ function App() {
     }
 
     const data = (await response.json()) as RoomState
-    setRoomState({ roomId: data.roomId, room: data.room, started: data.started })
-    setStatusMessage('Game started.')
+    setRoomState({
+      roomId: data.roomId,
+      room: data.room,
+      started: data.started,
+      startRequested: data.startRequested,
+      startedAt: data.startedAt,
+      connectedPlayerIds: data.connectedPlayerIds,
+    })
+
+    if (data.started) {
+      setStatusMessage('Game started.')
+      return
+    }
+
+    setStatusMessage('Waiting for all players to connect...')
   }
 
   const sendChatMessage = async () => {
@@ -473,8 +568,16 @@ function App() {
         <section className="panel gamePanel">
           <h1 className="title">Game Room {roomState.roomId}</h1>
           <p className="turnTimer">
-            Time Left: <strong>{turnSecondsLeft}s</strong>
-            {activePlayer ? ` | Turn: ${activePlayer.name}` : ''}
+            {gameStartsIn > 0 ? (
+              <>
+                Game starts in <strong>{gameStartsIn}s</strong>
+              </>
+            ) : (
+              <>
+                Time Left: <strong>{turnSecondsLeft}s</strong>
+                {activePlayer ? ` | Turn: ${activePlayer.name}` : ''}
+              </>
+            )}
           </p>
 
           <div className="gameLayout">
@@ -550,6 +653,11 @@ function App() {
   }
 
   if (roomState) {
+    const connectedPlayerIds = new Set(roomState.connectedPlayerIds ?? [])
+    const disconnectedPlayers = roomState.room.players.filter(
+      (player) => !connectedPlayerIds.has(player.id),
+    )
+
     return (
       <main className="screen">
         <section className="panel roomPanel">
@@ -586,6 +694,7 @@ function App() {
                     {player.name}
                     {player.id === playerId ? ' (You)' : ''}
                   </span>
+                  <strong>{connectedPlayerIds.has(player.id) ? 'Online' : 'Offline'}</strong>
                   {player.id === roomState.room.hostId ? <strong>Host</strong> : null}
                 </li>
               ))}
@@ -597,16 +706,26 @@ function App() {
               type="button"
               className="playButton"
               onClick={startGame}
-              disabled={!canStartGame}
+              disabled={!canStartGame || Boolean(roomState.startRequested)}
             >
-              Start
+              {roomState.startRequested ? 'Waiting for players...' : 'Start'}
             </button>
           ) : (
-            <p className="hintText">Waiting for host to start the game.</p>
+            <p className="hintText">
+              {roomState.startRequested
+                ? 'Host started the game. Waiting for everyone to reconnect.'
+                : 'Waiting for host to start the game.'}
+            </p>
           )}
 
           {isHost && !canStartGame ? (
             <p className="hintText">At least 2 players are required to start.</p>
+          ) : null}
+
+          {roomState.startRequested && disconnectedPlayers.length > 0 ? (
+            <p className="hintText">
+              Waiting for: {disconnectedPlayers.map((player) => player.name).join(', ')}
+            </p>
           ) : null}
 
           {roomState.started ? <p className="startedText">Game started.</p> : null}
