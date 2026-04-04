@@ -28,6 +28,8 @@ interface RoomRecord {
   chatMessages: ChatMessage[];
   turnSecondsRemaining: number | null;
   currentTurnPlayerId: string | null;
+  currentWord: string | null;
+  waitingForWordResolutionAtZero: boolean;
 }
 
 interface ChatMessage {
@@ -54,9 +56,16 @@ interface RoomStateBroadcastEvent {
   connectedPlayerIds: string[];
   turnSecondsRemaining: number | null;
   currentTurnPlayerId: string | null;
+  waitingForWordResolutionAtZero: boolean;
 }
 
-type RoomBroadcastEvent = ChatBroadcastEvent | RoomStateBroadcastEvent;
+interface ActiveWordBroadcastEvent {
+  type: "active_word";
+  roomId: string;
+  word: string | null;
+}
+
+type RoomBroadcastEvent = ChatBroadcastEvent | RoomStateBroadcastEvent | ActiveWordBroadcastEvent;
 
 const app = express();
 const rooms = new Map<string, RoomRecord>();
@@ -65,6 +74,48 @@ const socketRooms = new WeakMap<WebSocket, string>();
 const socketPlayers = new WeakMap<WebSocket, string>();
 const roomTickIntervals = new Map<string, NodeJS.Timeout>();
 const GAME_START_DELAY_MS = 3000;
+const WORD_POOL = [
+  "самолет",
+  "дерево",
+  "река",
+  "облако",
+  "молния",
+  "велосипед",
+  "чайник",
+  "крокодил",
+  "компас",
+  "библиотека",
+  "телескоп",
+  "карандаш",
+  "футбол",
+  "радуга",
+  "холодильник",
+  "пианино",
+  "космонавт",
+  "шоколад",
+  "фонарик",
+  "остров",
+  "шторм",
+  "калькулятор",
+  "подушка",
+  "медуза",
+  "картина",
+  "вулкан",
+  "чемодан",
+  "метро",
+  "гитара",
+  "кактус",
+  "пингвин",
+  "песочные часы",
+  "будильник",
+  "водопад",
+  "клавиатура",
+  "вертолет",
+  "пустыня",
+  "корабль",
+  "фейерверк",
+  "мороженое",
+] as const;
 
 app.use(express.json());
 app.use((_: Request, res: Response, next) => {
@@ -83,6 +134,10 @@ const createId = (prefix: string): string =>
 
 const getRouteParam = (value: string | string[] | undefined): string =>
   Array.isArray(value) ? value[0] ?? "" : value ?? "";
+
+const normalizeWord = (value: string): string => value.trim().toLowerCase().replace(/ё/g, "е");
+
+const getRandomWord = (): string => WORD_POOL[Math.floor(Math.random() * WORD_POOL.length)] ?? "слово";
 
 const addSocketToRoom = (roomId: string, socket: WebSocket): void => {
   const sockets = roomSockets.get(roomId);
@@ -123,6 +178,7 @@ const buildRoomStatePayload = (
   connectedPlayerIds: [...record.connectedPlayerIds],
   turnSecondsRemaining: record.turnSecondsRemaining,
   currentTurnPlayerId: record.currentTurnPlayerId,
+  waitingForWordResolutionAtZero: record.waitingForWordResolutionAtZero,
 });
 
 const clearRoomTickInterval = (roomId: string): void => {
@@ -178,7 +234,12 @@ const startRoomTickLoop = (roomId: string): void => {
     if (!record.currentTurnPlayerId) {
       record.currentTurnPlayerId = getNextTurnPlayerId(record);
       record.turnSecondsRemaining = record.room.settings.timer;
+      if (!record.currentWord) {
+        record.currentWord = getRandomWord();
+      }
+      record.waitingForWordResolutionAtZero = false;
       broadcastRoomState(roomId, record);
+      broadcastActiveWord(roomId, record);
       return;
     }
 
@@ -186,11 +247,16 @@ const startRoomTickLoop = (roomId: string): void => {
       record.turnSecondsRemaining = record.room.settings.timer;
     }
 
+    if (record.waitingForWordResolutionAtZero) {
+      record.turnSecondsRemaining = 0;
+      broadcastRoomState(roomId, record);
+      return;
+    }
+
     record.turnSecondsRemaining = Math.max(0, record.turnSecondsRemaining - 1);
 
     if (record.turnSecondsRemaining === 0) {
-      record.currentTurnPlayerId = getNextTurnPlayerId(record);
-      record.turnSecondsRemaining = record.room.settings.timer;
+      record.waitingForWordResolutionAtZero = true;
     }
 
     broadcastRoomState(roomId, record);
@@ -247,6 +313,50 @@ const broadcastRoomState = (roomId: string, record: RoomRecord): void => {
   });
 };
 
+const broadcastActiveWord = (roomId: string, record: RoomRecord): void => {
+  const sockets = roomSockets.get(roomId);
+  if (!sockets) {
+    return;
+  }
+
+  for (const socket of sockets) {
+    if (socket.readyState !== WebSocket.OPEN) {
+      continue;
+    }
+
+    const socketPlayerId = socketPlayers.get(socket);
+    const wordForSocket =
+      socketPlayerId && socketPlayerId === record.currentTurnPlayerId ? record.currentWord : null;
+
+    socket.send(
+      JSON.stringify({
+        type: "active_word",
+        roomId,
+        word: wordForSocket,
+      } satisfies ActiveWordBroadcastEvent),
+    );
+  }
+};
+
+const resolveCurrentWord = (roomId: string, record: RoomRecord): void => {
+  const timedOut = record.turnSecondsRemaining === 0 || record.waitingForWordResolutionAtZero;
+
+  if (timedOut) {
+    record.currentTurnPlayerId = getNextTurnPlayerId(record);
+    record.turnSecondsRemaining = record.room.settings.timer;
+  }
+
+  record.currentWord = getRandomWord();
+  record.waitingForWordResolutionAtZero = false;
+
+  if (record.turnSecondsRemaining === null) {
+    record.turnSecondsRemaining = record.room.settings.timer;
+  }
+
+  broadcastRoomState(roomId, record);
+  broadcastActiveWord(roomId, record);
+};
+
 const startRoomGame = (roomId: string, record: RoomRecord): void => {
   if (record.started) {
     return;
@@ -258,7 +368,10 @@ const startRoomGame = (roomId: string, record: RoomRecord): void => {
   record.startedAt = new Date(Date.now() + GAME_START_DELAY_MS).toISOString();
   record.turnSecondsRemaining = record.room.settings.timer;
   record.currentTurnPlayerId = record.room.players[0]?.id ?? null;
+  record.currentWord = getRandomWord();
+  record.waitingForWordResolutionAtZero = false;
   broadcastRoomState(roomId, record);
+  broadcastActiveWord(roomId, record);
   startRoomTickLoop(roomId);
 };
 
@@ -300,6 +413,8 @@ app.post("/rooms", (req: Request, res: Response) => {
     chatMessages: [],
     turnSecondsRemaining: null,
     currentTurnPlayerId: null,
+    currentWord: null,
+    waitingForWordResolutionAtZero: false,
   });
   return res.status(201).json({
     roomId,
@@ -311,6 +426,7 @@ app.post("/rooms", (req: Request, res: Response) => {
     connectedPlayerIds: [],
     turnSecondsRemaining: null,
     currentTurnPlayerId: null,
+    waitingForWordResolutionAtZero: false,
   });
 });
 
@@ -399,6 +515,9 @@ app.patch("/rooms/:roomId/settings", (req: Request, res: Response) => {
   }
 
   record.room.settings.timer = Math.max(10, Math.min(300, timer));
+  if (record.turnSecondsRemaining !== null && !record.waitingForWordResolutionAtZero) {
+    record.turnSecondsRemaining = Math.min(record.turnSecondsRemaining, record.room.settings.timer);
+  }
   broadcastRoomState(roomId, record);
   return res.json(buildRoomStatePayload(roomId, record));
 });
@@ -475,7 +594,90 @@ app.post("/rooms/:roomId/chat", (req: Request, res: Response) => {
 
   record.chatMessages.push(message);
   broadcastToRoom(roomId, { type: "chat_message", roomId, message });
+
+  const isActivePlayer = player.id === record.currentTurnPlayerId;
+  const hasWordToGuess = Boolean(record.currentWord);
+  const attemptedSelfGuess =
+    isActivePlayer && hasWordToGuess && normalizeWord(text) === normalizeWord(record.currentWord ?? "");
+  const guessedWord =
+    !isActivePlayer &&
+    hasWordToGuess &&
+    normalizeWord(text) === normalizeWord(record.currentWord ?? "");
+
+  if (attemptedSelfGuess) {
+    const rejectedGuessMessage: ChatMessage = {
+      id: createId("msg"),
+      playerId: "system",
+      playerName: "System",
+      text: `${player.name} cannot guess their own word.`,
+      createdAt: new Date().toISOString(),
+    };
+
+    record.chatMessages.push(rejectedGuessMessage);
+    broadcastToRoom(roomId, { type: "chat_message", roomId, message: rejectedGuessMessage });
+  }
+
+  if (guessedWord) {
+    player.score += 1;
+
+    const activePlayer = record.room.players.find(
+      (roomPlayer) => roomPlayer.id === record.currentTurnPlayerId,
+    );
+    if (activePlayer) {
+      activePlayer.score += 1;
+    }
+
+    const solvedMessage: ChatMessage = {
+      id: createId("msg"),
+      playerId: "system",
+      playerName: "System",
+      text: `${player.name} guessed the word. +1 point for guesser and active player.`,
+      createdAt: new Date().toISOString(),
+    };
+
+    record.chatMessages.push(solvedMessage);
+    broadcastToRoom(roomId, { type: "chat_message", roomId, message: solvedMessage });
+    resolveCurrentWord(roomId, record);
+  }
+
   return res.status(201).json({ roomId, message });
+});
+
+app.post("/rooms/:roomId/skip", (req: Request, res: Response) => {
+  const roomId = getRouteParam(req.params.roomId);
+  const record = rooms.get(roomId);
+  const playerId = String(req.body?.playerId ?? "");
+
+  if (!record) {
+    return res.status(404).json({ error: "room not found" });
+  }
+
+  if (!record.started) {
+    return res.status(400).json({ error: "game has not started" });
+  }
+
+  if (!record.currentTurnPlayerId || record.currentTurnPlayerId !== playerId) {
+    return res.status(403).json({ error: "only active player can skip the word" });
+  }
+
+  const activePlayer = record.room.players.find((roomPlayer) => roomPlayer.id === playerId);
+  if (!activePlayer) {
+    return res.status(403).json({ error: "player is not in this room" });
+  }
+
+  const skippedMessage: ChatMessage = {
+    id: createId("msg"),
+    playerId: "system",
+    playerName: "System",
+    text: `${activePlayer.name} skipped the word.`,
+    createdAt: new Date().toISOString(),
+  };
+
+  record.chatMessages.push(skippedMessage);
+  broadcastToRoom(roomId, { type: "chat_message", roomId, message: skippedMessage });
+  resolveCurrentWord(roomId, record);
+
+  return res.status(200).json(buildRoomStatePayload(roomId, record));
 });
 
 const server = app.listen(3000, () => {
@@ -506,6 +708,9 @@ wss.on("connection", (socket: WebSocket, req: IncomingMessage) => {
     startRoomGame(roomId, record);
   } else {
     broadcastRoomState(roomId, record);
+    if (record.started) {
+      broadcastActiveWord(roomId, record);
+    }
   }
 
   socket.on("close", () => {

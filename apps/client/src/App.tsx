@@ -25,6 +25,9 @@ interface RoomState {
   startRequested?: boolean
   startedAt?: string | null
   connectedPlayerIds?: string[]
+  turnSecondsRemaining?: number | null
+  currentTurnPlayerId?: string | null
+  waitingForWordResolutionAtZero?: boolean
 }
 
 interface ChatMessage {
@@ -91,6 +94,18 @@ const pushRoomPath = (roomId: string): void => {
   }
 }
 
+const mapRoomState = (data: RoomState): RoomState => ({
+  roomId: data.roomId,
+  room: data.room,
+  started: data.started,
+  startRequested: data.startRequested,
+  startedAt: data.startedAt,
+  connectedPlayerIds: data.connectedPlayerIds,
+  turnSecondsRemaining: data.turnSecondsRemaining,
+  currentTurnPlayerId: data.currentTurnPlayerId,
+  waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
+})
+
 function App() {
   const [name, setName] = useState('')
   const [roomCode, setRoomCode] = useState(() => getRoomCodeFromPath(window.location.pathname))
@@ -99,13 +114,10 @@ function App() {
   const [statusMessage, setStatusMessage] = useState('')
   const [chatInput, setChatInput] = useState('')
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-  const [activeTurnIndex, setActiveTurnIndex] = useState(0)
-  const [turnSecondsLeft, setTurnSecondsLeft] = useState(0)
   const [gameStartsIn, setGameStartsIn] = useState(0)
+  const [activeWord, setActiveWord] = useState<string | null>(null)
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
-  const turnCycleKeyRef = useRef('')
-  const turnCycleStartedAtRef = useRef(0)
 
   const isHost = useMemo(() => {
     if (!roomState || !playerId) {
@@ -178,14 +190,8 @@ function App() {
     setName(trimmedName)
     setRoomCode(data.roomId)
     setPlayerId(data.playerId)
-    setRoomState({
-      roomId: data.roomId,
-      room: data.room,
-      started: data.started,
-      startRequested: data.startRequested,
-      startedAt: data.startedAt,
-      connectedPlayerIds: data.connectedPlayerIds,
-    })
+    setRoomState(mapRoomState(data))
+    setActiveWord(null)
     setChatMessages([])
     setStoredRoomSession({ roomId: data.roomId, playerId: data.playerId, name: trimmedName })
     pushRoomPath(data.roomId)
@@ -243,7 +249,7 @@ function App() {
           return
         }
         const data = (await response.json()) as RoomState
-        setRoomState(data)
+        setRoomState(mapRoomState(data))
       } catch {
         // Ignore poll errors to keep the current screen usable.
       }
@@ -295,17 +301,31 @@ function App() {
           startRequested?: boolean
           startedAt?: string | null
           connectedPlayerIds?: string[]
+          turnSecondsRemaining?: number | null
+          currentTurnPlayerId?: string | null
+          waitingForWordResolutionAtZero?: boolean
+          word?: string | null
         }
 
         if (data.type === 'room_state' && data.roomId === roomState.roomId && data.room) {
-          setRoomState({
-            roomId: data.roomId,
-            room: data.room,
-            started: data.started,
-            startRequested: data.startRequested,
-            startedAt: data.startedAt,
-            connectedPlayerIds: data.connectedPlayerIds,
-          })
+          setRoomState(
+            mapRoomState({
+              roomId: data.roomId,
+              room: data.room,
+              started: data.started,
+              startRequested: data.startRequested,
+              startedAt: data.startedAt,
+              connectedPlayerIds: data.connectedPlayerIds,
+              turnSecondsRemaining: data.turnSecondsRemaining,
+              currentTurnPlayerId: data.currentTurnPlayerId,
+              waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
+            }),
+          )
+          return
+        }
+
+        if (data.type === 'active_word' && data.roomId === roomState.roomId) {
+          setActiveWord(data.word ?? null)
           return
         }
 
@@ -349,76 +369,37 @@ function App() {
   }, [chatMessages, roomState?.started])
 
   useEffect(() => {
-    if (!roomState?.started) {
-      turnCycleKeyRef.current = ''
-      turnCycleStartedAtRef.current = 0
-      setActiveTurnIndex(0)
-      setTurnSecondsLeft(0)
+    if (!roomState?.started || !roomState.startedAt) {
       setGameStartsIn(0)
       return
     }
 
-    const playerCount = roomState.room.players.length
-    if (playerCount === 0) {
-      turnCycleKeyRef.current = ''
-      turnCycleStartedAtRef.current = 0
-      setActiveTurnIndex(0)
-      setTurnSecondsLeft(0)
-      setGameStartsIn(0)
-      return
-    }
-
-    const turnDuration = roomState.room.settings.timer
-    const startedAtMs = roomState.startedAt ? Date.parse(roomState.startedAt) : NaN
-    if (!Number.isFinite(startedAtMs)) {
-      setActiveTurnIndex(0)
-      setTurnSecondsLeft(turnDuration)
-      setGameStartsIn(0)
-      return
-    }
-
-    const cycleKey = `${roomState.roomId}:${playerCount}:${turnDuration}:${roomState.startedAt ?? ''}`
-
-    if (turnCycleKeyRef.current !== cycleKey) {
-      turnCycleKeyRef.current = cycleKey
-      turnCycleStartedAtRef.current = startedAtMs
-    }
-
-    const updateTurnFromClock = () => {
-      const millisecondsUntilStart = turnCycleStartedAtRef.current - Date.now()
-      if (millisecondsUntilStart > 0) {
-        setGameStartsIn(Math.ceil(millisecondsUntilStart / 1000))
-        setActiveTurnIndex(0)
-        setTurnSecondsLeft(turnDuration)
+    const updateCountdown = () => {
+      const startMs = Date.parse(roomState.startedAt ?? '')
+      if (!Number.isFinite(startMs)) {
+        setGameStartsIn(0)
         return
       }
 
-      setGameStartsIn(0)
-
-      const elapsedSeconds = Math.floor((Date.now() - turnCycleStartedAtRef.current) / 1000)
-      const turnsPassed = Math.floor(elapsedSeconds / turnDuration)
-      const secondsIntoTurn = elapsedSeconds % turnDuration
-      const nextTurnIndex = turnsPassed % playerCount
-      const secondsLeft = turnDuration - secondsIntoTurn
-
-      setActiveTurnIndex(nextTurnIndex)
-      setTurnSecondsLeft(secondsLeft)
+      const seconds = Math.max(0, Math.ceil((startMs - Date.now()) / 1000))
+      setGameStartsIn(seconds)
     }
 
-    updateTurnFromClock()
-
-    const intervalId = window.setInterval(() => {
-      updateTurnFromClock()
-    }, 1000)
-
+    updateCountdown()
+    const intervalId = window.setInterval(updateCountdown, 250)
     return () => window.clearInterval(intervalId)
-  }, [
-    roomState?.started,
-    roomState?.roomId,
-    roomState?.room.players.length,
-    roomState?.room.settings.timer,
-    roomState?.startedAt,
-  ])
+  }, [roomState?.started, roomState?.startedAt])
+
+  useEffect(() => {
+    if (!roomState?.started) {
+      setActiveWord(null)
+      return
+    }
+
+    if (roomState.currentTurnPlayerId !== playerId) {
+      setActiveWord(null)
+    }
+  }, [playerId, roomState?.started, roomState?.currentTurnPlayerId])
 
   const createRoom = async () => {
     const trimmedName = name.trim()
@@ -443,14 +424,8 @@ function App() {
     setName(trimmedName)
     setRoomCode(data.roomId)
     setPlayerId(data.playerId)
-    setRoomState({
-      roomId: data.roomId,
-      room: data.room,
-      started: data.started,
-      startRequested: data.startRequested,
-      startedAt: data.startedAt,
-      connectedPlayerIds: data.connectedPlayerIds,
-    })
+    setRoomState(mapRoomState(data))
+    setActiveWord(null)
     setChatMessages([])
     setStoredRoomSession({ roomId: data.roomId, playerId: data.playerId, name: trimmedName })
     pushRoomPath(data.roomId)
@@ -485,14 +460,7 @@ function App() {
     }
 
     const data = (await response.json()) as RoomState
-    setRoomState({
-      roomId: data.roomId,
-      room: data.room,
-      started: data.started,
-      startRequested: data.startRequested,
-      startedAt: data.startedAt,
-      connectedPlayerIds: data.connectedPlayerIds,
-    })
+    setRoomState(mapRoomState(data))
   }
 
   const startGame = async () => {
@@ -512,14 +480,7 @@ function App() {
     }
 
     const data = (await response.json()) as RoomState
-    setRoomState({
-      roomId: data.roomId,
-      room: data.room,
-      started: data.started,
-      startRequested: data.startRequested,
-      startedAt: data.startedAt,
-      connectedPlayerIds: data.connectedPlayerIds,
-    })
+    setRoomState(mapRoomState(data))
 
     if (data.started) {
       setStatusMessage('Game started.')
@@ -560,8 +521,33 @@ function App() {
     setChatInput('')
   }
 
+  const skipWord = async () => {
+    if (!roomState || !playerId) {
+      return
+    }
+
+    const response = await fetch(`${API_BASE}/rooms/${roomState.roomId}/skip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId }),
+    })
+
+    if (!response.ok) {
+      setStatusMessage('Could not skip word.')
+      return
+    }
+
+    const data = (await response.json()) as RoomState
+    setRoomState(mapRoomState(data))
+    setStatusMessage('Word skipped.')
+  }
+
   if (roomState?.started) {
-    const activePlayer = roomState.room.players[activeTurnIndex]
+    const activePlayer = roomState.room.players.find(
+      (player) => player.id === roomState.currentTurnPlayerId,
+    )
+    const turnSecondsLeft = roomState.turnSecondsRemaining ?? roomState.room.settings.timer
+    const isActivePlayer = Boolean(playerId && roomState.currentTurnPlayerId === playerId)
 
     return (
       <main className="screen">
@@ -571,6 +557,11 @@ function App() {
             {gameStartsIn > 0 ? (
               <>
                 Game starts in <strong>{gameStartsIn}s</strong>
+              </>
+            ) : roomState.waitingForWordResolutionAtZero ? (
+              <>
+                Time Left: <strong>0s</strong>
+                {activePlayer ? ` | Waiting for "${activePlayer.name}" word to be guessed or skipped` : ''}
               </>
             ) : (
               <>
@@ -591,10 +582,10 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {roomState.room.players.map((player, index) => (
+                  {roomState.room.players.map((player) => (
                     <tr
                       key={player.id}
-                      className={index === activeTurnIndex ? 'highlightedPlayerRow' : ''}
+                      className={player.id === roomState.currentTurnPlayerId ? 'highlightedPlayerRow' : ''}
                     >
                       <td>
                         {player.name}
@@ -607,7 +598,28 @@ function App() {
               </table>
             </div>
 
-            <div className="gameColumn futureColumn" />
+            <div className="gameColumn futureColumn wordColumn">
+              <h2 className="sectionTitle">Word Card</h2>
+              <div className="wordCard">
+                {gameStartsIn > 0 ? (
+                  <p className="wordHint">Get ready...</p>
+                ) : isActivePlayer ? (
+                  <p className="wordValue">{activeWord ?? 'Loading word...'}</p>
+                ) : (
+                  <p className="wordHint">
+                    {activePlayer
+                      ? `${activePlayer.name} is explaining now. Guess the word in chat.`
+                      : 'Waiting for active player.'}
+                  </p>
+                )}
+              </div>
+
+              {isActivePlayer && gameStartsIn === 0 ? (
+                <button type="button" className="skipButton" onClick={skipWord}>
+                  Skip Word
+                </button>
+              ) : null}
+            </div>
 
             <div className="gameColumn chatSection">
               <h2 className="sectionTitle">Chat</h2>
@@ -637,7 +649,7 @@ function App() {
                   className="input"
                   value={chatInput}
                   onChange={(event) => setChatInput(event.target.value)}
-                  placeholder="Type a message"
+                  placeholder="Type your guess"
                 />
                 <button type="submit" className="playButton">
                   Send
