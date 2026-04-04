@@ -65,7 +65,24 @@ interface ActiveWordBroadcastEvent {
   word: string | null;
 }
 
-type RoomBroadcastEvent = ChatBroadcastEvent | RoomStateBroadcastEvent | ActiveWordBroadcastEvent;
+interface VoiceSignalBroadcastEvent {
+  type: "voice_signal";
+  roomId: string;
+  fromPlayerId: string;
+  signal: unknown;
+}
+
+interface VoiceSignalClientEvent {
+  type: "voice_signal";
+  toPlayerId: string;
+  signal: unknown;
+}
+
+type RoomBroadcastEvent =
+  | ChatBroadcastEvent
+  | RoomStateBroadcastEvent
+  | ActiveWordBroadcastEvent
+  | VoiceSignalBroadcastEvent;
 
 const app = express();
 const rooms = new Map<string, RoomRecord>();
@@ -730,6 +747,70 @@ wss.on("connection", (socket: WebSocket, req: IncomingMessage) => {
     if (!hasAnotherSocketForPlayer(closedRoomId, closedPlayerId, socket)) {
       roomRecord.connectedPlayerIds.delete(closedPlayerId);
       broadcastRoomState(closedRoomId, roomRecord);
+    }
+  });
+
+  socket.on("message", (rawPayload) => {
+    const sourceRoomId = socketRooms.get(socket);
+    const sourcePlayerId = socketPlayers.get(socket);
+    if (!sourceRoomId || !sourcePlayerId) {
+      return;
+    }
+
+    let parsedPayload: VoiceSignalClientEvent | null = null;
+    try {
+      const incoming = JSON.parse(rawPayload.toString()) as Partial<VoiceSignalClientEvent>;
+      if (incoming.type !== "voice_signal") {
+        return;
+      }
+
+      if (!incoming.toPlayerId || incoming.toPlayerId === sourcePlayerId) {
+        return;
+      }
+
+      parsedPayload = {
+        type: "voice_signal",
+        toPlayerId: incoming.toPlayerId,
+        signal: incoming.signal,
+      };
+    } catch {
+      return;
+    }
+
+    const roomRecord = rooms.get(sourceRoomId);
+    if (!roomRecord) {
+      return;
+    }
+
+    const targetPlayer = roomRecord.room.players.find(
+      (roomPlayer) => roomPlayer.id === parsedPayload.toPlayerId,
+    );
+    if (!targetPlayer) {
+      return;
+    }
+
+    const sockets = roomSockets.get(sourceRoomId);
+    if (!sockets) {
+      return;
+    }
+
+    const event: VoiceSignalBroadcastEvent = {
+      type: "voice_signal",
+      roomId: sourceRoomId,
+      fromPlayerId: sourcePlayerId,
+      signal: parsedPayload.signal,
+    };
+
+    for (const targetSocket of sockets) {
+      if (targetSocket.readyState !== WebSocket.OPEN) {
+        continue;
+      }
+
+      if (socketPlayers.get(targetSocket) !== parsedPayload.toPlayerId) {
+        continue;
+      }
+
+      targetSocket.send(JSON.stringify(event));
     }
   });
 });

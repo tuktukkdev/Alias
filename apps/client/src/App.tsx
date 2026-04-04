@@ -106,6 +106,23 @@ const mapRoomState = (data: RoomState): RoomState => ({
   waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
 })
 
+const RTC_CONFIG: RTCConfiguration = {
+  iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
+}
+
+const MIC_CONSTRAINTS: MediaStreamConstraints = {
+  audio: {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    sampleRate: 48000,
+    channelCount: 1,
+    latency: 0.02,
+  } as MediaTrackConstraints & { latency?: number },
+}
+
+const OPUS_TARGET_BITRATE = 48000
+
 function App() {
   const [name, setName] = useState('')
   const [roomCode, setRoomCode] = useState(() => getRoomCodeFromPath(window.location.pathname))
@@ -116,8 +133,23 @@ function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [gameStartsIn, setGameStartsIn] = useState(0)
   const [activeWord, setActiveWord] = useState<string | null>(null)
+  const [playerVolumes, setPlayerVolumes] = useState<Record<string, number>>({})
+  const [volumeMenu, setVolumeMenu] = useState<{
+    playerId: string
+    playerName: string
+    x: number
+    y: number
+  } | null>(null)
+  const setVoiceStatus = (_: string) => {}
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
+  const volumeMenuRef = useRef<HTMLDivElement | null>(null)
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
+  const remoteAudioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
+  const pendingIceRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
+  const localAudioStreamRef = useRef<MediaStream | null>(null)
+  const localAudioTrackRef = useRef<MediaStreamTrack | null>(null)
+  const playerVolumesRef = useRef<Record<string, number>>({})
 
   const isHost = useMemo(() => {
     if (!roomState || !playerId) {
@@ -134,6 +166,246 @@ function App() {
       (roomState?.room.players.length ?? 0) > 1
     )
   }, [isHost, roomState?.room.players.length, roomState?.started, roomState?.startRequested])
+
+  const getPlayerVolume = (targetPlayerId: string) => {
+    return playerVolumes[targetPlayerId] ?? playerVolumesRef.current[targetPlayerId] ?? 1
+  }
+
+  const updatePlayerVolume = (targetPlayerId: string, volume: number) => {
+    const normalizedVolume = Math.max(0, Math.min(1, volume))
+
+    setPlayerVolumes((current) => {
+      const next = {
+        ...current,
+        [targetPlayerId]: normalizedVolume,
+      }
+      playerVolumesRef.current = next
+      return next
+    })
+
+    const audioElement = remoteAudioElementsRef.current.get(targetPlayerId)
+    if (audioElement) {
+      audioElement.volume = normalizedVolume
+    }
+  }
+
+  const openVolumeMenu = (
+    event: React.MouseEvent,
+    targetPlayerId: string,
+    targetPlayerName: string,
+  ) => {
+    event.preventDefault()
+
+    const menuWidth = 250
+    const menuHeight = 116
+    const x = Math.min(event.clientX, window.innerWidth - menuWidth - 8)
+    const y = Math.min(event.clientY, window.innerHeight - menuHeight - 8)
+
+    setVolumeMenu({
+      playerId: targetPlayerId,
+      playerName: targetPlayerName,
+      x: Math.max(8, x),
+      y: Math.max(8, y),
+    })
+  }
+
+  const sendVoiceSignal = (toPlayerId: string, signal: unknown) => {
+    const socket = chatSocketRef.current
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: 'voice_signal',
+        toPlayerId,
+        signal,
+      }),
+    )
+  }
+
+  const stopLocalAudio = () => {
+    const stream = localAudioStreamRef.current
+    if (!stream) {
+      return
+    }
+
+    stream.getTracks().forEach((track) => track.stop())
+    localAudioStreamRef.current = null
+    localAudioTrackRef.current = null
+  }
+
+  const setLocalTrackEnabled = (enabled: boolean) => {
+    const track = localAudioTrackRef.current
+    if (!track) {
+      return
+    }
+
+    track.enabled = enabled
+  }
+
+  const tuneAudioSender = async (sender: RTCRtpSender) => {
+    const params = sender.getParameters()
+    const encodings = params.encodings && params.encodings.length > 0 ? params.encodings : [{}]
+    encodings[0] = {
+      ...encodings[0],
+      maxBitrate: OPUS_TARGET_BITRATE,
+      dtx: 'enabled',
+    } as RTCRtpEncodingParameters & { dtx?: 'enabled' | 'disabled' }
+
+    params.encodings = encodings
+
+    try {
+      await sender.setParameters(params)
+    } catch {
+      // Some browsers may reject bitrate tuning on specific transports.
+    }
+  }
+
+  const clearVoiceConnections = () => {
+    for (const [, connection] of peerConnectionsRef.current) {
+      connection.onicecandidate = null
+      connection.ontrack = null
+      connection.close()
+    }
+
+    peerConnectionsRef.current.clear()
+    pendingIceRef.current.clear()
+
+    for (const [, audio] of remoteAudioElementsRef.current) {
+      audio.pause()
+      audio.srcObject = null
+    }
+
+    remoteAudioElementsRef.current.clear()
+  }
+
+  const drainPendingIce = async (remotePlayerId: string, connection: RTCPeerConnection) => {
+    const pendingCandidates = pendingIceRef.current.get(remotePlayerId) ?? []
+    if (pendingCandidates.length === 0) {
+      return
+    }
+
+    pendingIceRef.current.delete(remotePlayerId)
+    for (const candidate of pendingCandidates) {
+      try {
+        await connection.addIceCandidate(new RTCIceCandidate(candidate))
+      } catch {
+        // Candidate can be stale when peers reconnect during turn handoff.
+      }
+    }
+  }
+
+  const getOrCreatePeerConnection = (remotePlayerId: string) => {
+    const existingConnection = peerConnectionsRef.current.get(remotePlayerId)
+    if (existingConnection) {
+      return existingConnection
+    }
+
+    const connection = new RTCPeerConnection(RTC_CONFIG)
+
+    connection.onicecandidate = (event) => {
+      if (!event.candidate) {
+        return
+      }
+
+      sendVoiceSignal(remotePlayerId, {
+        type: 'ice',
+        candidate: event.candidate.toJSON(),
+      })
+    }
+
+    connection.ontrack = (event) => {
+      const [remoteStream] = event.streams
+      if (!remoteStream) {
+        return
+      }
+
+      let audioElement = remoteAudioElementsRef.current.get(remotePlayerId)
+      if (!audioElement) {
+        audioElement = new Audio()
+        audioElement.autoplay = true
+        remoteAudioElementsRef.current.set(remotePlayerId, audioElement)
+      }
+
+      audioElement.volume = getPlayerVolume(remotePlayerId)
+      audioElement.srcObject = remoteStream
+      void audioElement.play().catch(() => {
+        // Browser may require explicit gesture in strict autoplay modes.
+      })
+    }
+
+    peerConnectionsRef.current.set(remotePlayerId, connection)
+    return connection
+  }
+
+  const ensurePeerConnectionsForRoom = (players: Player[], ownPlayerId: string) => {
+    const expectedRemoteIds = new Set(players.filter((player) => player.id !== ownPlayerId).map((p) => p.id))
+
+    for (const [remotePlayerId, connection] of peerConnectionsRef.current) {
+      if (expectedRemoteIds.has(remotePlayerId)) {
+        continue
+      }
+
+      connection.onicecandidate = null
+      connection.ontrack = null
+      connection.close()
+      peerConnectionsRef.current.delete(remotePlayerId)
+      pendingIceRef.current.delete(remotePlayerId)
+
+      const audioElement = remoteAudioElementsRef.current.get(remotePlayerId)
+      if (audioElement) {
+        audioElement.pause()
+        audioElement.srcObject = null
+        remoteAudioElementsRef.current.delete(remotePlayerId)
+      }
+    }
+
+    for (const remotePlayerId of expectedRemoteIds) {
+      getOrCreatePeerConnection(remotePlayerId)
+    }
+  }
+
+  const ensureLocalAudioTrack = async () => {
+    if (localAudioTrackRef.current && localAudioTrackRef.current.readyState === 'live') {
+      return localAudioTrackRef.current
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS)
+    const [audioTrack] = stream.getAudioTracks()
+    if (!audioTrack) {
+      throw new Error('No audio track available')
+    }
+
+    localAudioStreamRef.current = stream
+    localAudioTrackRef.current = audioTrack
+    return audioTrack
+  }
+
+  const attachOrReplaceTrack = async (connection: RTCPeerConnection, track: MediaStreamTrack) => {
+    const existingAudioSender = connection.getSenders().find((sender) => sender.track?.kind === 'audio')
+    if (existingAudioSender) {
+      if (existingAudioSender.track !== track) {
+        await existingAudioSender.replaceTrack(track)
+      }
+      await tuneAudioSender(existingAudioSender)
+      return false
+    }
+
+    const stream = localAudioStreamRef.current ?? new MediaStream([track])
+    const sender = connection.addTrack(track, stream)
+    await tuneAudioSender(sender)
+    return true
+  }
+
+  const createOfferForPeer = async (remotePlayerId: string, connection: RTCPeerConnection) => {
+    const offer = await connection.createOffer()
+    await connection.setLocalDescription(offer)
+    sendVoiceSignal(remotePlayerId, {
+      type: 'offer',
+      sdp: offer.sdp,
+    })
+  }
 
   const joinRoom = async (options?: {
     playerName?: string
@@ -305,6 +577,12 @@ function App() {
           currentTurnPlayerId?: string | null
           waitingForWordResolutionAtZero?: boolean
           word?: string | null
+          fromPlayerId?: string
+          signal?: {
+            type?: 'offer' | 'answer' | 'ice'
+            sdp?: string
+            candidate?: RTCIceCandidateInit
+          }
         }
 
         if (data.type === 'room_state' && data.roomId === roomState.roomId && data.room) {
@@ -327,6 +605,60 @@ function App() {
         if (data.type === 'active_word' && data.roomId === roomState.roomId) {
           setActiveWord(data.word ?? null)
           return
+        }
+
+        if (
+          data.type === 'voice_signal' &&
+          data.roomId === roomState.roomId &&
+          data.fromPlayerId &&
+          data.signal
+        ) {
+          const fromPlayerId = data.fromPlayerId
+          const connection = getOrCreatePeerConnection(fromPlayerId)
+
+          if (data.signal.type === 'offer' && data.signal.sdp) {
+            void (async () => {
+              await connection.setRemoteDescription(
+                new RTCSessionDescription({ type: 'offer', sdp: data.signal?.sdp ?? '' }),
+              )
+              await drainPendingIce(fromPlayerId, connection)
+              const answer = await connection.createAnswer()
+              await connection.setLocalDescription(answer)
+              sendVoiceSignal(fromPlayerId, {
+                type: 'answer',
+                sdp: answer.sdp,
+              })
+            })().catch(() => {
+              setVoiceStatus('Voice sync failed. Retrying...')
+            })
+
+            return
+          }
+
+          if (data.signal.type === 'answer' && data.signal.sdp) {
+            void (async () => {
+              await connection.setRemoteDescription(
+                new RTCSessionDescription({ type: 'answer', sdp: data.signal?.sdp ?? '' }),
+              )
+              await drainPendingIce(fromPlayerId, connection)
+            })().catch(() => {
+              setVoiceStatus('Voice answer failed.')
+            })
+            return
+          }
+
+          if (data.signal.type === 'ice' && data.signal.candidate) {
+            if (connection.remoteDescription) {
+              void connection.addIceCandidate(new RTCIceCandidate(data.signal.candidate)).catch(() => {
+                // Ignore stale candidate race conditions.
+              })
+            } else {
+              const queued = pendingIceRef.current.get(fromPlayerId) ?? []
+              queued.push(data.signal.candidate)
+              pendingIceRef.current.set(fromPlayerId, queued)
+            }
+            return
+          }
         }
 
         if (data.type !== 'chat_message' || !data.message) {
@@ -369,6 +701,41 @@ function App() {
   }, [chatMessages, roomState?.started])
 
   useEffect(() => {
+    if (!volumeMenu) {
+      return
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const menuElement = volumeMenuRef.current
+      if (menuElement?.contains(event.target as Node)) {
+        return
+      }
+
+      setVolumeMenu(null)
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setVolumeMenu(null)
+      }
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [volumeMenu])
+
+  useEffect(() => {
+    if (!roomState?.started) {
+      setVolumeMenu(null)
+    }
+  }, [roomState?.started])
+
+  useEffect(() => {
     if (!roomState?.started || !roomState.startedAt) {
       setGameStartsIn(0)
       return
@@ -400,6 +767,81 @@ function App() {
       setActiveWord(null)
     }
   }, [playerId, roomState?.started, roomState?.currentTurnPlayerId])
+
+  useEffect(() => {
+    if (!roomState?.started || !playerId) {
+      setVoiceStatus('')
+      stopLocalAudio()
+      clearVoiceConnections()
+      return
+    }
+
+    ensurePeerConnectionsForRoom(roomState.room.players, playerId)
+
+    if (gameStartsIn > 0) {
+      setVoiceStatus('Voice opens when the timer starts.')
+      setLocalTrackEnabled(false)
+      return
+    }
+
+    let cancelled = false
+    const isSpeaker = roomState.currentTurnPlayerId === playerId
+    const activeSpeaker = roomState.room.players.find((player) => player.id === roomState.currentTurnPlayerId)
+
+    const setupVoice = async () => {
+      if (!isSpeaker) {
+        setLocalTrackEnabled(false)
+        setVoiceStatus(activeSpeaker ? `${activeSpeaker.name} is speaking now.` : 'Waiting for speaker.')
+        return
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setVoiceStatus('Microphone is not supported in this browser.')
+        return
+      }
+
+      try {
+        const localTrack = await ensureLocalAudioTrack()
+        if (cancelled) {
+          return
+        }
+
+        localTrack.enabled = true
+        setVoiceStatus('You are live on microphone.')
+
+        const peers = roomState.room.players.filter((player) => player.id !== playerId)
+        for (const peer of peers) {
+          const connection = getOrCreatePeerConnection(peer.id)
+          const addedNewSender = await attachOrReplaceTrack(connection, localTrack)
+
+          if (addedNewSender) {
+            await createOfferForPeer(peer.id, connection)
+          }
+        }
+      } catch {
+        setVoiceStatus('Allow microphone access to speak during your turn.')
+      }
+    }
+
+    void setupVoice()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    gameStartsIn,
+    playerId,
+    roomState?.started,
+    roomState?.currentTurnPlayerId,
+    roomState?.room.players,
+  ])
+
+  useEffect(() => {
+    return () => {
+      stopLocalAudio()
+      clearVoiceConnections()
+    }
+  }, [])
 
   const createRoom = async () => {
     const trimmedName = name.trim()
@@ -548,6 +990,7 @@ function App() {
     )
     const turnSecondsLeft = roomState.turnSecondsRemaining ?? roomState.room.settings.timer
     const isActivePlayer = Boolean(playerId && roomState.currentTurnPlayerId === playerId)
+    const speakingPlayerId = gameStartsIn === 0 ? roomState.currentTurnPlayerId : null
 
     return (
       <main className="screen">
@@ -579,21 +1022,36 @@ function App() {
                   <tr>
                     <th scope="col">Player</th>
                     <th scope="col">Score</th>
+                    <th scope="col" className="voiceHeaderCell">
+                      Voice
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {roomState.room.players.map((player) => (
-                    <tr
-                      key={player.id}
-                      className={player.id === roomState.currentTurnPlayerId ? 'highlightedPlayerRow' : ''}
-                    >
-                      <td>
-                        {player.name}
-                        {player.id === playerId ? ' (You)' : ''}
-                      </td>
-                      <td>{player.score}</td>
-                    </tr>
-                  ))}
+                  {roomState.room.players.map((player) => {
+                    const isSpeaking = player.id === speakingPlayerId
+
+                    return (
+                      <tr
+                        key={player.id}
+                        className={player.id === roomState.currentTurnPlayerId ? 'highlightedPlayerRow' : ''}
+                        onContextMenu={(event) => openVolumeMenu(event, player.id, player.name)}
+                      >
+                        <td>
+                          {player.name}
+                          {player.id === playerId ? ' (You)' : ''}
+                        </td>
+                        <td>{player.score}</td>
+                        <td className="voiceCell">
+                          <span
+                            className={`voiceIndicator ${isSpeaking ? 'voiceIndicatorActive' : ''}`}
+                            title={isSpeaking ? `${player.name} is speaking` : `${player.name} is muted`}
+                            aria-label={isSpeaking ? `${player.name} is speaking` : `${player.name} is muted`}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -659,6 +1117,33 @@ function App() {
               {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
             </div>
           </div>
+
+          {volumeMenu ? (
+            <div
+              ref={volumeMenuRef}
+              className="volumeContextMenu"
+              style={{ left: volumeMenu.x, top: volumeMenu.y }}
+            >
+              <p className="volumeMenuTitle">Volume: {volumeMenu.playerName}</p>
+              <input
+                className="volumeSlider"
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={Math.round(getPlayerVolume(volumeMenu.playerId) * 100)}
+                onChange={(event) => {
+                  updatePlayerVolume(volumeMenu.playerId, Number(event.target.value) / 100)
+                }}
+                disabled={volumeMenu.playerId === playerId}
+              />
+              <p className="volumeMenuValue">
+                {volumeMenu.playerId === playerId
+                  ? 'Your own mic volume is controlled by system input settings.'
+                  : `${Math.round(getPlayerVolume(volumeMenu.playerId) * 100)}%`}
+              </p>
+            </div>
+          ) : null}
         </section>
       </main>
     )
