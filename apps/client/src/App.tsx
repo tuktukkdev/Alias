@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import './styles/common.css'
-import { ROOM_PATH_PREFIX } from './config/client'
+import { ROOM_PATH_PREFIX, WS_BASE } from './config/client'
 import { AuthModal } from './components/AuthModal'
 import CollectionsScreen from './components/CollectionsScreen'
 import { CollectionPickerModal } from './components/CollectionPickerModal'
@@ -408,8 +408,8 @@ function App() {
   useEffect(() => {
     if (!roomState || !playerId) return
 
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const wsUrl = `${protocol}://localhost:3000/ws?roomId=${encodeURIComponent(roomState.roomId)}&playerId=${encodeURIComponent(playerId)}`
+    const wsBase = WS_BASE ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`
+    const wsUrl = `${wsBase}/ws?roomId=${encodeURIComponent(roomState.roomId)}&playerId=${encodeURIComponent(playerId)}`
     const socket = new WebSocket(wsUrl)
     chatSocketRef.current = socket
 

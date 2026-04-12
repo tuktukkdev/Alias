@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: alias
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: prodpassword32
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d alias"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  server:
+    build: ./server
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:prodpassword32@postgres:5432/alias
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: https://bluefieldapps.com
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM: ${EMAIL_FROM}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  client:
+    build: ./client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
+  uploads:

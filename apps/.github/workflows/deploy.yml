@@ -1,0 +1,25 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 92.255.79.21
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /app
+            git pull origin main
+            # Rebuild and restart only app containers.
+            # postgres and redis keep running — volumes (pgdata, uploads) are untouched.
+            docker compose up -d --build server client
+            # Remove dangling images to free disk space
+            docker image prune -f

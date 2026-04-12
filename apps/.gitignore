@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.log
+
+# Environment / secrets — never commit these
+.env
+.env.*
+!.env.example
+
+# Docker volumes / runtime data
+uploads/
+
+# OS
+.DS_Store
