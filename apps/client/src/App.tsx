@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import './App.css'
 import { ROOM_PATH_PREFIX } from './config/client'
+import { AuthModal } from './components/AuthModal'
 import { GameScreen } from './components/GameScreen'
+import { Header } from './components/Header'
 import { JoinScreen } from './components/JoinScreen'
 import { RoomScreen } from './components/RoomScreen'
+import {
+  loginRequest,
+  parseAuthErrorResponse,
+  parseAuthResponse,
+  registerRequest,
+} from './services/authApi'
+import type { AuthUser } from './types/auth'
+import { clearStoredAuthUser, getStoredAuthUser, setStoredAuthUser } from './utils/authSession'
 import {
   createRoomRequest,
   fetchRoomChatRequest,
@@ -41,7 +51,12 @@ const MIC_CONSTRAINTS: MediaStreamConstraints = {
 const OPUS_TARGET_BITRATE = 48000
 
 function App() {
-  const [name, setName] = useState('')
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => getStoredAuthUser())
+  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null)
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authError, setAuthError] = useState('')
+
+  const [name, setName] = useState(() => getStoredAuthUser()?.name ?? '')
   const [roomCode, setRoomCode] = useState(() => getRoomCodeFromPath(window.location.pathname))
   const [playerId, setPlayerId] = useState<string | null>(null)
   const [roomState, setRoomState] = useState<RoomState | null>(null)
@@ -386,6 +401,12 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (authUser) {
+      setName(authUser.name)
+    }
+  }, [authUser])
+
+  useEffect(() => {
     if (roomState) {
       return
     }
@@ -396,20 +417,27 @@ function App() {
     }
 
     const session = getStoredRoomSession()
-    if (!session || session.roomId !== roomCodeFromPath) {
+    if (session && session.roomId === roomCodeFromPath) {
+      setName(session.name)
       setRoomCode(roomCodeFromPath)
+      void joinRoom({
+        playerName: session.name,
+        targetRoomCode: session.roomId,
+        existingPlayerId: session.playerId,
+        isAutoReconnect: true,
+      })
       return
     }
 
-    setName(session.name)
     setRoomCode(roomCodeFromPath)
-    void joinRoom({
-      playerName: session.name,
-      targetRoomCode: session.roomId,
-      existingPlayerId: session.playerId,
-      isAutoReconnect: true,
-    })
-  }, [roomState])
+
+    if (authUser) {
+      void joinRoom({
+        playerName: authUser.name,
+        targetRoomCode: roomCodeFromPath,
+      })
+    }
+  }, [roomState, authUser])
 
   useEffect(() => {
     if (!roomState) {
@@ -847,57 +875,105 @@ function App() {
     setStatusMessage('Word skipped.')
   }
 
-  if (roomState?.started) {
-    return (
-      <GameScreen
-        roomState={roomState}
-        playerId={playerId}
-        chatInput={chatInput}
-        chatMessages={chatMessages}
-        statusMessage={statusMessage}
-        gameStartsIn={gameStartsIn}
-        activeWord={activeWord}
-        volumeMenu={volumeMenu}
-        chatListRef={chatListRef}
-        volumeMenuRef={volumeMenuRef}
-        getPlayerVolume={getPlayerVolume}
-        onChatInputChange={setChatInput}
-        onSendChatMessage={() => {
-          void sendChatMessage()
-        }}
-        onSkipWord={() => {
-          void skipWord()
-        }}
-        onOpenVolumeMenu={openVolumeMenu}
-        onUpdatePlayerVolume={updatePlayerVolume}
-      />
-    )
+  const handleLogin = async (username: string, password: string) => {
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const response = await loginRequest(username, password)
+      if (!response.ok) {
+        const message = await parseAuthErrorResponse(response)
+        setAuthError(message)
+        return
+      }
+      const data = await parseAuthResponse(response)
+      const user: AuthUser = { id: String(data.id), name: data.username }
+      setStoredAuthUser(user)
+      setAuthUser(user)
+      setAuthModal(null)
+      setAuthError('')
+    } catch {
+      setAuthError('Could not reach the server. Is it running?')
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
-  if (roomState) {
-    return (
-      <RoomScreen
-        roomState={roomState}
-        playerId={playerId}
-        isHost={isHost}
-        canStartGame={canStartGame}
-        statusMessage={statusMessage}
-        roomPathPrefix={ROOM_PATH_PREFIX}
-        onUpdateTimer={(nextTimer) => {
-          void updateTimer(nextTimer)
-        }}
-        onStartGame={() => {
-          void startGame()
-        }}
-      />
-    )
+  const handleRegister = async (username: string, email: string, password: string) => {
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const response = await registerRequest(username, email, password)
+      if (!response.ok) {
+        const message = await parseAuthErrorResponse(response)
+        setAuthError(message)
+        return
+      }
+      const data = await parseAuthResponse(response)
+      const user: AuthUser = { id: String(data.id), name: data.username }
+      setStoredAuthUser(user)
+      setAuthUser(user)
+      setAuthModal(null)
+      setAuthError('')
+    } catch {
+      setAuthError('Could not reach the server. Is it running?')
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
-  return (
+  const handleLogout = () => {
+    clearStoredAuthUser()
+    setAuthUser(null)
+  }
+
+  const handleNavigate = (_page: 'profile' | 'friends' | 'stats' | 'collections') => {
+    // TODO: implement page navigation when those pages are ready
+  }
+
+  const screenContent = roomState?.started ? (
+    <GameScreen
+      roomState={roomState}
+      playerId={playerId}
+      chatInput={chatInput}
+      chatMessages={chatMessages}
+      statusMessage={statusMessage}
+      gameStartsIn={gameStartsIn}
+      activeWord={activeWord}
+      volumeMenu={volumeMenu}
+      chatListRef={chatListRef}
+      volumeMenuRef={volumeMenuRef}
+      getPlayerVolume={getPlayerVolume}
+      onChatInputChange={setChatInput}
+      onSendChatMessage={() => {
+        void sendChatMessage()
+      }}
+      onSkipWord={() => {
+        void skipWord()
+      }}
+      onOpenVolumeMenu={openVolumeMenu}
+      onUpdatePlayerVolume={updatePlayerVolume}
+    />
+  ) : roomState ? (
+    <RoomScreen
+      roomState={roomState}
+      playerId={playerId}
+      isHost={isHost}
+      canStartGame={canStartGame}
+      statusMessage={statusMessage}
+      roomPathPrefix={ROOM_PATH_PREFIX}
+      onUpdateTimer={(nextTimer) => {
+        void updateTimer(nextTimer)
+      }}
+      onStartGame={() => {
+        void startGame()
+      }}
+    />
+  ) : (
     <JoinScreen
       name={name}
       roomCode={roomCode}
       statusMessage={statusMessage}
+      nameReadOnly={!!authUser}
       onNameChange={setName}
       onRoomCodeChange={setRoomCode}
       onJoin={() => {
@@ -907,6 +983,36 @@ function App() {
         void createRoom()
       }}
     />
+  )
+
+  return (
+    <div className="appLayout">
+      <Header
+        user={authUser}
+        onLoginClick={() => setAuthModal('login')}
+        onRegisterClick={() => setAuthModal('register')}
+        onLogout={handleLogout}
+        onNavigate={handleNavigate}
+      />
+      {screenContent}
+      {authModal && (
+        <AuthModal
+          initialTab={authModal}
+          serverError={authError}
+          loading={authLoading}
+          onClose={() => {
+            setAuthModal(null)
+            setAuthError('')
+          }}
+          onLogin={(username, password) => {
+            void handleLogin(username, password)
+          }}
+          onRegister={(username, email, password) => {
+            void handleRegister(username, email, password)
+          }}
+        />
+      )}
+    </div>
   )
 }
 

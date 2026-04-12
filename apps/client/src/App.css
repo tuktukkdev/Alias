@@ -1,5 +1,295 @@
-.screen {
+.appLayout {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+}
+
+/* ── Site Header ─────────────────────────────────────────── */
+
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid #2f3a4a;
+  background: #070d16cc;
+  backdrop-filter: blur(8px);
+}
+
+.siteHeaderInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 56px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.siteHeaderLogo {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #56c5e8;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.siteHeaderNav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Auth buttons (logged-out state) */
+
+.authButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.headerBtn {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.headerBtnGhost {
+  border: 1px solid #39475b;
+  background: transparent;
+  color: #b0c4d8;
+}
+
+.headerBtnGhost:hover {
+  background: #182334;
+  border-color: #56c5e8;
+  color: #eaf2ff;
+}
+
+.headerBtnPrimary {
+  border: 0;
+  background: #1f8fb3;
+  color: #f2fbff;
+}
+
+.headerBtnPrimary:hover {
+  background: #187392;
+}
+
+/* User menu (logged-in state) */
+
+.userMenu {
+  position: relative;
+}
+
+.avatarButton {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.3rem;
+  border: 1px solid #39475b;
+  border-radius: 24px;
+  background: transparent;
+  cursor: pointer;
+  color: #d9e3f1;
+  font: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.avatarButton:hover,
+.avatarButton[aria-expanded='true'] {
+  border-color: #56c5e8;
+  background: #182334;
+}
+
+.avatarImg {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatarDefault {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1f8fb3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #f2fbff;
+}
+
+.avatarDefault svg {
+  width: 18px;
+  height: 18px;
+}
+
+.avatarName {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatarChevron {
+  width: 18px;
+  height: 18px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Dropdown */
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  border-radius: 10px;
+  border: 1px solid #2f3a4a;
+  background: #0f1c2d;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  z-index: 200;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 0;
+  background: transparent;
+  color: #d9e3f1;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dropdownItem:hover {
+  background: #182334;
+}
+
+.dropdownItem svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: #2f3a4a;
+  margin: 0.25rem 0;
+}
+
+.dropdownItemDanger {
+  color: #e07070;
+}
+
+.dropdownItemDanger:hover {
+  background: #2a1818;
+}
+
+/* ── Auth Modal ──────────────────────────────────────────── */
+
+.authDialog {
+  padding: 0;
+  border: 1px solid #2f3a4a;
+  border-radius: 16px;
+  background: #101925;
+  color: #e6eefc;
+  width: min(420px, calc(100vw - 2rem));
+}
+
+.authDialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.authDialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid #2f3a4a;
+}
+
+.authTabs {
+  display: flex;
+  gap: 0.2rem;
+  background: #182334;
+  border-radius: 8px;
+  padding: 0.2rem;
+}
+
+.authTab {
+  padding: 0.35rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.authTabActive {
+  background: #1f8fb3;
+  color: #f2fbff;
+}
+
+.authDialogClose {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7a94ae;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.authDialogClose:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.authDialogClose svg {
+  width: 18px;
+  height: 18px;
+}
+
+.authForm {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.authError {
+  margin: 0;
+  color: #e07070;
+  font-size: 0.85rem;
+}
+
+.screen {
+  min-height: calc(100vh - 56px);
   display: grid;
   place-items: center;
   padding: 1.5rem;
@@ -35,6 +325,17 @@
 .input:focus {
   outline: 2px solid #32b0d5;
   outline-offset: 1px;
+}
+
+.inputLocked {
+  color: #7a94ae;
+  cursor: default;
+  border-color: #2a3a4e;
+  background: #111e2d;
+}
+
+.inputLocked:focus {
+  outline: none;
 }
 
 .playButton {

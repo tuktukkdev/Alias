@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const authRoutes_1 = require("./routes/authRoutes");
 const roomRoutes_1 = require("./routes/roomRoutes");
 const socketServer_1 = require("./ws/socketServer");
 const app = (0, express_1.default)();
@@ -17,6 +18,7 @@ app.use((_, res, next) => {
 app.options(/.*/, (_, res) => {
     res.sendStatus(204);
 });
+(0, authRoutes_1.registerAuthRoutes)(app);
 (0, roomRoutes_1.registerRoomRoutes)(app);
 const server = app.listen(3000, () => {
     console.log("Server running on port 3000");

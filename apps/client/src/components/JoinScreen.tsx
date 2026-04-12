@@ -2,6 +2,7 @@ interface JoinScreenProps {
   name: string
   roomCode: string
   statusMessage: string
+  nameReadOnly?: boolean
   onNameChange: (value: string) => void
   onRoomCodeChange: (value: string) => void
   onJoin: () => void
@@ -12,6 +13,7 @@ export function JoinScreen({
   name,
   roomCode,
   statusMessage,
+  nameReadOnly,
   onNameChange,
   onRoomCodeChange,
   onJoin,
@@ -33,8 +35,9 @@ export function JoinScreen({
           id="name"
           name="name"
           type="text"
-          className="input"
+          className={`input${nameReadOnly ? ' inputLocked' : ''}`}
           value={name}
+          readOnly={nameReadOnly}
           onChange={(event) => onNameChange(event.target.value)}
         />
         <label htmlFor="roomCode" className="label">

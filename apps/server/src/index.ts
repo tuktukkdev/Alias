@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import { registerAuthRoutes } from "./routes/authRoutes";
 import { registerRoomRoutes } from "./routes/roomRoutes";
 import { registerSocketServer } from "./ws/socketServer";
 
@@ -16,6 +17,7 @@ app.options(/.*/, (_: Request, res: Response) => {
   res.sendStatus(204);
 });
 
+registerAuthRoutes(app);
 registerRoomRoutes(app);
 
 const server = app.listen(3000, () => {
