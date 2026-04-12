@@ -178,8 +178,10 @@
   padding: 0;
   display: grid;
   gap: 0.55rem;
-  max-height: 36vh;
-  overflow: auto;
+  /* Fixed height = 8 chat items to keep layout stable regardless of player count */
+  height: 360px;
+  overflow-y: auto;
+  align-content: start;
   scrollbar-width: thin;
   scrollbar-color: #4a5ea0 #131f31;
 }

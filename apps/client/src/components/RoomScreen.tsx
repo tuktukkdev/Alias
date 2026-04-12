@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { RoomState } from '../types/game'
 import './RoomScreen.css'
 
@@ -30,6 +31,8 @@ export function RoomScreen({
   onStartGame,
   onExitRoom,
 }: RoomScreenProps) {
+  const [copiedCode, setCopiedCode] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
   const connectedPlayerIds = new Set(roomState.connectedPlayerIds ?? [])
   const disconnectedPlayers = roomState.room.players.filter(
     (player) => !connectedPlayerIds.has(player.id),
@@ -39,12 +42,42 @@ export function RoomScreen({
     <main className="screen">
       <section className="panel roomPanel">
         <h1 className="title">Room {roomState.roomId}</h1>
-        <p className="hintText">Share this code: {roomState.roomId}</p>
-        <p className="hintText">
-          Room URL: {window.location.origin}
-          {roomPathPrefix}
-          {roomState.roomId}
-        </p>
+        <div className="roomShareRow">
+          <span className="hintText roomShareLabel">Code: <strong>{roomState.roomId}</strong></span>
+          <button
+            type="button"
+            className="copyBtn"
+            title="Copy code"
+            onClick={() => {
+              void navigator.clipboard.writeText(roomState.roomId)
+              setCopiedCode(true)
+              setTimeout(() => setCopiedCode(false), 2000)
+            }}
+          >
+            {copiedCode ? '✓' : (
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="16" height="16">
+                <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            className="copyBtn"
+            title="Copy room link"
+            onClick={() => {
+              const link = `${window.location.origin}${roomPathPrefix}${roomState.roomId}`
+              void navigator.clipboard.writeText(link)
+              setCopiedLink(true)
+              setTimeout(() => setCopiedLink(false), 2000)
+            }}
+          >
+            {copiedLink ? '✓' : (
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="16" height="16">
+                <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7C4.24 7 2 9.24 2 12s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+              </svg>
+            )}
+          </button>
+        </div>
 
         <div className="timerRow">
           <label htmlFor="timer" className="label">

@@ -85,3 +85,25 @@
   display: grid;
   gap: 0.5rem;
 }
+
+.deleteAvatarButton {
+  padding: 0.55rem 1rem;
+  border: 1px solid #6e3d3d;
+  border-radius: 8px;
+  background: transparent;
+  color: #e07070;
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.deleteAvatarButton:hover:not(:disabled) {
+  background: #602f2f;
+  color: #ffe8e8;
+}
+
+.deleteAvatarButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

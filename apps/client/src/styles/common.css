@@ -39,6 +39,15 @@
   outline-offset: 1px;
 }
 
+.inputInvalid {
+  border-color: #e07070;
+  background: #2a1a1a;
+}
+
+.inputInvalid:focus {
+  outline-color: #e07070;
+}
+
 .playButton {
   border: 0;
   border-radius: 10px;

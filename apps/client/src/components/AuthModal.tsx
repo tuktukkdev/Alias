@@ -33,7 +33,13 @@ export function AuthModal({
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [clientError, setClientError] = useState('')
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
   const dialogRef = useRef<HTMLDialogElement>(null)
+  // Track where mousedown started so we only close on backdrop click,
+  // not when the user drags from inside → outside and releases.
+  const mousedownOnBackdrop = useRef(false)
+
+  const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }))
 
   useEffect(() => {
     dialogRef.current?.showModal()
@@ -45,28 +51,51 @@ export function AuthModal({
     setPassword('')
     setConfirmPassword('')
     setClientError('')
+    setTouched({})
     setForgotMode(false)
     setForgotEmail('')
     setForgotSent(false)
     setForgotError('')
   }, [tab])
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const USERNAME_RE = /^[a-zA-Z0-9._/]+$/
+
+  // Per-field validation helpers used for live highlighting
+  const emailInvalid  = touched.email  && (email.trim() === '' || !EMAIL_RE.test(email.trim()))
+  const passInvalid   = touched.password && (password.trim() === '' || password.trim().length < 6)
+  const confirmInvalid = touched.confirmPassword && confirmPassword.trim() !== password.trim()
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     setClientError('')
+    // Mark all relevant fields as touched so empty ones highlight
+    const fields: Record<string, boolean> = { username: true, password: true }
+    if (tab === 'register') { fields.email = true; fields.confirmPassword = true }
+    setTouched(fields)
 
     const trimmedUsername = username.trim()
     const trimmedPassword = password.trim()
 
     if (!trimmedUsername || !trimmedPassword) {
-      setClientError('Please fill in all fields.')
+      setClientError('Please fill in all required fields.')
+      return
+    }
+
+    if (!USERNAME_RE.test(trimmedUsername)) {
+      setClientError('Username may only contain letters, numbers, . / and _')
+      return
+    }
+
+    if (trimmedPassword.length < 6) {
+      setClientError('Password must be at least 6 characters.')
       return
     }
 
     if (tab === 'register') {
       const trimmedEmail = email.trim()
-      if (!trimmedEmail) {
-        setClientError('Please enter your email.')
+      if (!trimmedEmail || !EMAIL_RE.test(trimmedEmail)) {
+        setClientError('Please enter a valid email address.')
         return
       }
       if (trimmedPassword !== confirmPassword.trim()) {
@@ -81,8 +110,13 @@ export function AuthModal({
 
   const displayError = clientError || serverError || ''
 
+  const handleDialogMouseDown = (e: React.MouseEvent<HTMLDialogElement>) => {
+    mousedownOnBackdrop.current = e.target === dialogRef.current
+  }
+
   const handleDialogClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-    if (e.target === dialogRef.current) onClose()
+    if (mousedownOnBackdrop.current && e.target === dialogRef.current) onClose()
+    mousedownOnBackdrop.current = false
   }
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
@@ -101,7 +135,7 @@ export function AuthModal({
   }
 
   return (
-    <dialog ref={dialogRef} className="authDialog" onCancel={onClose} onClick={handleDialogClick}>
+    <dialog ref={dialogRef} className="authDialog" onCancel={onClose} onMouseDown={handleDialogMouseDown} onClick={handleDialogClick}>
       <div className="authDialogHeader">
         <div className="authTabs">
           {!forgotMode && (
@@ -168,62 +202,72 @@ export function AuthModal({
       ) : (
         <form className="authForm" onSubmit={handleSubmit}>
           <label className="label" htmlFor="authUsername">
-            Username
+            Username <span className="requiredMark">*</span>
           </label>
           <input
             id="authUsername"
             name="username"
             type="text"
-            className="input"
+            className={`input${touched.username && !username.trim() ? ' inputInvalid' : ''}`}
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^a-zA-Z0-9._/]/g, '')
+              setUsername(val)
+            }}
+            onBlur={() => markTouched('username')}
             autoComplete="username"
             autoFocus
+            maxLength={15}
           />
 
           {tab === 'register' && (
             <>
               <label className="label" htmlFor="authEmail">
-                Email
+                Email <span className="requiredMark">*</span>
               </label>
               <input
                 id="authEmail"
                 name="email"
                 type="email"
-                className="input"
+                className={`input${emailInvalid ? ' inputInvalid' : ''}`}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => markTouched('email')}
                 autoComplete="email"
               />
             </>
           )}
 
           <label className="label" htmlFor="authPassword">
-            Password
+            Password <span className="requiredMark">*</span>
           </label>
           <input
             id="authPassword"
             name="password"
             type="password"
-            className="input"
+            className={`input${passInvalid ? ' inputInvalid' : ''}`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => markTouched('password')}
             autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
+            maxLength={20}
           />
 
           {tab === 'register' && (
             <>
               <label className="label" htmlFor="authConfirmPassword">
-                Confirm Password
+                Confirm Password <span className="requiredMark">*</span>
               </label>
               <input
                 id="authConfirmPassword"
                 name="confirmPassword"
                 type="password"
-                className="input"
+                className={`input${confirmInvalid ? ' inputInvalid' : ''}`}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                onBlur={() => markTouched('confirmPassword')}
                 autoComplete="new-password"
+                maxLength={20}
               />
             </>
           )}

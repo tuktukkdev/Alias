@@ -4,6 +4,43 @@
   gap: 1rem;
 }
 
+.roomShareRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.roomShareLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copyBtn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #2f3a4a;
+  border-radius: 7px;
+  background: #182334;
+  color: #7eb3e8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background 0.15s, color 0.15s;
+}
+
+.copyBtn:hover {
+  background: #223249;
+  color: #aecff5;
+}
+
 .timerRow {
   display: grid;
   gap: 0.4rem;

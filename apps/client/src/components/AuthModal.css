@@ -106,3 +106,8 @@
 .authForgotLink:hover {
   color: #aecff5;
 }
+
+.requiredMark {
+  color: #e07070;
+  font-weight: 700;
+}

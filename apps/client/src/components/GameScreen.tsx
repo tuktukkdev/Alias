@@ -178,6 +178,7 @@ export function GameScreen({
                 value={chatInput}
                 onChange={(event) => onChatInputChange(event.target.value)}
                 placeholder="Type your guess"
+                maxLength={50}
               />
               <button type="submit" className="playButton">
                 Send

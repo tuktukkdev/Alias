@@ -305,6 +305,10 @@ export const registerRoomRoutes = (app: Express): void => {
       return res.status(400).json({ error: "text is required" });
     }
 
+    if (text.length > 50) {
+      return res.status(400).json({ error: "Message too long (max 50 characters)." });
+    }
+
     const message: ChatMessage = {
       id: createId("msg"),
       playerId: player.id,

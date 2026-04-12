@@ -1,6 +1,7 @@
 import { Express, Request, Response } from "express";
 import fs from "fs";
 import path from "path";
+import { prisma } from "../db/prisma";
 import {
   createEmailVerificationToken,
   getExistingPicturePath,
@@ -30,12 +31,16 @@ export const registerAuthRoutes = (app: Express): void => {
       return res.status(400).json({ error: "username, email and password are required" });
     }
 
-    if (username.length < 2 || username.length > 64) {
-      return res.status(400).json({ error: "Username must be 2–64 characters" });
+    if (username.length < 2 || username.length > 15) {
+      return res.status(400).json({ error: "Username must be 2–15 characters" });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    if (!/^[a-zA-Z0-9._/]+$/.test(username)) {
+      return res.status(400).json({ error: "Username may only contain letters, numbers, . / and _" });
+    }
+
+    if (password.length < 6 || password.length > 20) {
+      return res.status(400).json({ error: "Password must be 6–20 characters" });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -91,8 +96,12 @@ export const registerAuthRoutes = (app: Express): void => {
       return res.status(400).json({ error: "userId and username are required" });
     }
 
-    if (newUsername.length < 2 || newUsername.length > 64) {
-      return res.status(400).json({ error: "Username must be 2–64 characters" });
+    if (newUsername.length < 2 || newUsername.length > 15) {
+      return res.status(400).json({ error: "Username must be 2–15 characters" });
+    }
+
+    if (!/^[a-zA-Z0-9._/]+$/.test(newUsername)) {
+      return res.status(400).json({ error: "Username may only contain letters, numbers, . / and _" });
     }
 
     const result = await updateUsername(userId, newUsername);
@@ -200,6 +209,19 @@ export const registerAuthRoutes = (app: Express): void => {
     const base = (process.env.SERVER_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
     const avatarUrl = `${base}/uploads/avatars/${filename}`;
     return res.json({ avatarUrl });
+  });
+
+  app.delete("/auth/profile/picture", async (req: Request, res: Response) => {
+    const userId = Number(req.body?.userId);
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+
+    const existingPath = await getExistingPicturePath(userId);
+    if (existingPath) {
+      const filePath = path.join(__dirname, "..", "..", "uploads", "avatars", existingPath);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+    await prisma.userPicture.deleteMany({ where: { userId } });
+    return res.json({ ok: true });
   });
 
   app.post("/auth/resend-verification", async (req: Request, res: Response) => {

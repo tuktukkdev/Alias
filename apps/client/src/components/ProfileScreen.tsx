@@ -30,6 +30,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
   const [avatarError, setAvatarError] = useState('')
   const [avatarSuccess, setAvatarSuccess] = useState('')
   const [avatarLoading, setAvatarLoading] = useState(false)
+  const [deleteAvatarLoading, setDeleteAvatarLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [emailVerified, setEmailVerified] = useState(user.emailVerified ?? false)
@@ -127,6 +128,31 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
       setAvatarError('Could not reach the server.')
     } finally {
       setAvatarLoading(false)
+    }
+  }
+
+  const handleDeleteAvatar = async () => {
+    if (!window.confirm('Remove your profile picture?')) return
+    setDeleteAvatarLoading(true)
+    setAvatarError('')
+    setAvatarSuccess('')
+    try {
+      const res = await fetch(`${API_BASE}/auth/profile/picture`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: Number(user.id) }),
+      })
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string }
+        setAvatarError(data.error ?? 'Failed to delete picture.')
+        return
+      }
+      setAvatarSuccess('Profile picture removed.')
+      onAvatarChanged('')
+    } catch {
+      setAvatarError('Could not reach the server.')
+    } finally {
+      setDeleteAvatarLoading(false)
     }
   }
 
@@ -273,6 +299,16 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
           <button type="submit" className="playButton" disabled={!avatarFile || avatarLoading}>
             {avatarLoading ? 'Uploading…' : 'Upload Picture'}
           </button>
+          {(user.avatarUrl || avatarPreview) && (
+            <button
+              type="button"
+              className="deleteAvatarButton"
+              onClick={() => void handleDeleteAvatar()}
+              disabled={deleteAvatarLoading}
+            >
+              {deleteAvatarLoading ? 'Removing…' : 'Delete Picture'}
+            </button>
+          )}
         </form>
 
         <hr className="profileDivider" />
@@ -287,8 +323,8 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
             className="input"
             type="text"
             value={newUsername}
-            onChange={(e) => setNewUsername(e.target.value)}
-            maxLength={64}
+            onChange={(e) => setNewUsername(e.target.value.replace(/[^a-zA-Z0-9._/]/g, ''))}
+            maxLength={15}
             autoComplete="username"
           />
           {usernameError && <p className="formError">{usernameError}</p>}
