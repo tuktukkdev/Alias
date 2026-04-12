@@ -2,15 +2,22 @@ import { Express, Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import {
+  createEmailVerificationToken,
   getExistingPicturePath,
   getUserAvatarUrl,
+  getUserEmail,
   getUserStats,
   loginUser,
   registerUser,
+  requestPasswordReset,
+  resendVerificationEmail,
+  resetPasswordViaToken,
   updatePassword,
   updateUsername,
   upsertUserPicture,
+  verifyEmailToken,
 } from "../services/authService";
+import { sendPasswordResetEmail, sendVerificationEmail } from "../services/emailService";
 
 export const registerAuthRoutes = (app: Express): void => {
   app.post("/auth/register", async (req: Request, res: Response) => {
@@ -48,7 +55,13 @@ export const registerAuthRoutes = (app: Express): void => {
       return res.status(500).json({ error: "Registration failed" });
     }
 
-    return res.status(201).json({ id: result.id, username: result.username, avatarUrl: null });
+    const token = await createEmailVerificationToken(result.id);
+    const savedEmail = await getUserEmail(result.id);
+    if (savedEmail) {
+      sendVerificationEmail(savedEmail, token).catch(() => {});
+    }
+
+    return res.status(201).json({ id: result.id, username: result.username, email: result.email, emailVerified: result.emailVerified, avatarUrl: null });
   });
 
   app.post("/auth/login", async (req: Request, res: Response) => {
@@ -66,7 +79,7 @@ export const registerAuthRoutes = (app: Express): void => {
     }
 
     const avatarUrl = await getUserAvatarUrl(result.id);
-    return res.status(200).json({ id: result.id, username: result.username, avatarUrl });
+    return res.status(200).json({ id: result.id, username: result.username, email: result.email, emailVerified: result.emailVerified, avatarUrl });
   });
 
   app.patch("/auth/profile/username", async (req: Request, res: Response) => {
@@ -173,5 +186,66 @@ export const registerAuthRoutes = (app: Express): void => {
 
     const avatarUrl = `http://localhost:3000/uploads/avatars/${filename}`;
     return res.json({ avatarUrl });
+  });
+
+  app.post("/auth/resend-verification", async (req: Request, res: Response) => {
+    const userId = Number(req.body?.userId);
+    if (!userId) return res.status(400).json({ error: "userId is required" });
+
+    const result = await resendVerificationEmail(userId);
+    if (!result.ok && result.code === "ALREADY_VERIFIED") {
+      return res.status(409).json({ error: "Email is already verified." });
+    }
+    if (!result.ok) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    sendVerificationEmail(result.email, result.token).catch(() => {});
+    return res.json({ ok: true });
+  });
+
+  app.post("/auth/verify-email", async (req: Request, res: Response) => {
+    const token = String(req.body?.token ?? "").trim();
+    if (!token) return res.status(400).json({ error: "token is required" });
+
+    const result = await verifyEmailToken(token);
+    if (!result.ok && result.code === "EXPIRED_TOKEN") {
+      return res.status(410).json({ error: "Verification link has expired. Please register again." });
+    }
+    if (!result.ok) {
+      return res.status(400).json({ error: "Invalid or already used verification link." });
+    }
+    return res.json({ ok: true });
+  });
+
+  app.post("/auth/request-password-reset", async (req: Request, res: Response) => {
+    const email = String(req.body?.email ?? "").trim();
+    if (!email) return res.status(400).json({ error: "email is required" });
+
+    const result = await requestPasswordReset(email);
+    // Always 200 to prevent email enumeration
+    if (result.ok) {
+      sendPasswordResetEmail(result.userEmail, result.token).catch(() => {});
+    }
+    return res.json({ ok: true });
+  });
+
+  app.post("/auth/reset-password", async (req: Request, res: Response) => {
+    const token = String(req.body?.token ?? "").trim();
+    const newPassword = String(req.body?.newPassword ?? "");
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: "token and newPassword are required" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+
+    const result = await resetPasswordViaToken(token, newPassword);
+    if (!result.ok && result.code === "EXPIRED_TOKEN") {
+      return res.status(410).json({ error: "Reset link has expired. Please request a new one." });
+    }
+    if (!result.ok) {
+      return res.status(400).json({ error: "Invalid or already used reset link." });
+    }
+    return res.json({ ok: true });
   });
 };

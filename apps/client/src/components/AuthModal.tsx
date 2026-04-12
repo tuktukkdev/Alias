@@ -10,6 +10,7 @@ interface AuthModalProps {
   onClose: () => void
   onLogin: (username: string, password: string) => void
   onRegister: (username: string, email: string, password: string) => void
+  onForgotPassword: (email: string) => Promise<boolean>
 }
 
 export function AuthModal({
@@ -19,8 +20,14 @@ export function AuthModal({
   onClose,
   onLogin,
   onRegister,
+  onForgotPassword,
 }: AuthModalProps) {
   const [tab, setTab] = useState<AuthTab>(initialTab)
+  const [forgotMode, setForgotMode] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotSent, setForgotSent] = useState(false)
+  const [forgotLoading, setForgotLoading] = useState(false)
+  const [forgotError, setForgotError] = useState('')
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,6 +45,10 @@ export function AuthModal({
     setPassword('')
     setConfirmPassword('')
     setClientError('')
+    setForgotMode(false)
+    setForgotEmail('')
+    setForgotSent(false)
+    setForgotError('')
   }, [tab])
 
   const handleSubmit = (e: FormEvent) => {
@@ -74,24 +85,48 @@ export function AuthModal({
     if (e.target === dialogRef.current) onClose()
   }
 
+  const handleForgotSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedEmail = forgotEmail.trim()
+    if (!trimmedEmail) { setForgotError('Please enter your email address.'); return }
+    setForgotLoading(true)
+    setForgotError('')
+    const ok = await onForgotPassword(trimmedEmail)
+    setForgotLoading(false)
+    if (ok) {
+      setForgotSent(true)
+    } else {
+      setForgotError('Something went wrong. Please try again.')
+    }
+  }
+
   return (
     <dialog ref={dialogRef} className="authDialog" onCancel={onClose} onClick={handleDialogClick}>
       <div className="authDialogHeader">
         <div className="authTabs">
-          <button
-            className={`authTab${tab === 'login' ? ' authTabActive' : ''}`}
-            type="button"
-            onClick={() => setTab('login')}
-          >
-            Log in
-          </button>
-          <button
-            className={`authTab${tab === 'register' ? ' authTabActive' : ''}`}
-            type="button"
-            onClick={() => setTab('register')}
-          >
-            Register
-          </button>
+          {!forgotMode && (
+            <>
+              <button
+                className={`authTab${tab === 'login' ? ' authTabActive' : ''}`}
+                type="button"
+                onClick={() => setTab('login')}
+              >
+                Log in
+              </button>
+              <button
+                className={`authTab${tab === 'register' ? ' authTabActive' : ''}`}
+                type="button"
+                onClick={() => setTab('register')}
+              >
+                Register
+              </button>
+            </>
+          )}
+          {forgotMode && (
+            <button className="authTab authTabActive" type="button" disabled>
+              Reset password
+            </button>
+          )}
         </div>
         <button className="authDialogClose" type="button" onClick={onClose} aria-label="Close">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -100,74 +135,112 @@ export function AuthModal({
         </button>
       </div>
 
-      <form className="authForm" onSubmit={handleSubmit}>
-        <label className="label" htmlFor="authUsername">
-          Username
-        </label>
-        <input
-          id="authUsername"
-          name="username"
-          type="text"
-          className="input"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          autoComplete="username"
-          autoFocus
-        />
-
-        {tab === 'register' && (
-          <>
-            <label className="label" htmlFor="authEmail">
-              Email
-            </label>
+      {forgotMode ? (
+        forgotSent ? (
+          <div className="authForm">
+            <p className="authSuccess">Check your inbox — we sent you a password reset link.</p>
+            <button type="button" className="authForgotLink" onClick={() => setForgotMode(false)}>
+              ← Back to log in
+            </button>
+          </div>
+        ) : (
+          <form className="authForm" onSubmit={(e) => void handleForgotSubmit(e)}>
+            <label className="label" htmlFor="forgotEmail">Email</label>
             <input
-              id="authEmail"
+              id="forgotEmail"
               name="email"
               type="email"
               className="input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
               autoComplete="email"
+              autoFocus
             />
-          </>
-        )}
+            {forgotError && <p className="authError">{forgotError}</p>}
+            <button type="submit" className="playButton" disabled={forgotLoading}>
+              {forgotLoading ? 'Sending…' : 'Send reset link'}
+            </button>
+            <button type="button" className="authForgotLink" onClick={() => setForgotMode(false)}>
+              ← Back to log in
+            </button>
+          </form>
+        )
+      ) : (
+        <form className="authForm" onSubmit={handleSubmit}>
+          <label className="label" htmlFor="authUsername">
+            Username
+          </label>
+          <input
+            id="authUsername"
+            name="username"
+            type="text"
+            className="input"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            autoFocus
+          />
 
-        <label className="label" htmlFor="authPassword">
-          Password
-        </label>
-        <input
-          id="authPassword"
-          name="password"
-          type="password"
-          className="input"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
-        />
+          {tab === 'register' && (
+            <>
+              <label className="label" htmlFor="authEmail">
+                Email
+              </label>
+              <input
+                id="authEmail"
+                name="email"
+                type="email"
+                className="input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </>
+          )}
 
-        {tab === 'register' && (
-          <>
-            <label className="label" htmlFor="authConfirmPassword">
-              Confirm Password
-            </label>
-            <input
-              id="authConfirmPassword"
-              name="confirmPassword"
-              type="password"
-              className="input"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-            />
-          </>
-        )}
+          <label className="label" htmlFor="authPassword">
+            Password
+          </label>
+          <input
+            id="authPassword"
+            name="password"
+            type="password"
+            className="input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
+          />
 
-        {displayError && <p className="authError">{displayError}</p>}
+          {tab === 'register' && (
+            <>
+              <label className="label" htmlFor="authConfirmPassword">
+                Confirm Password
+              </label>
+              <input
+                id="authConfirmPassword"
+                name="confirmPassword"
+                type="password"
+                className="input"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+              />
+            </>
+          )}
 
-        <button type="submit" className="playButton" disabled={loading}>
-          {loading ? 'Please wait…' : tab === 'login' ? 'Log in' : 'Create account'}
-        </button>
-      </form>
+          {displayError && <p className="authError">{displayError}</p>}
+
+          <button type="submit" className="playButton" disabled={loading}>
+            {loading ? 'Please wait…' : tab === 'login' ? 'Log in' : 'Create account'}
+          </button>
+
+          {tab === 'login' && (
+            <button type="button" className="authForgotLink" onClick={() => setForgotMode(true)}>
+              Forgot password?
+            </button>
+          )}
+        </form>
+      )}
     </dialog>
   )
 }

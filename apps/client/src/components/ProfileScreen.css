@@ -51,3 +51,37 @@
   width: 54px;
   height: 54px;
 }
+
+.emailVerificationRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.emailBadgeVerified {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6ecf8e;
+  background: rgba(110, 207, 142, 0.12);
+  border: 1px solid rgba(110, 207, 142, 0.35);
+  border-radius: 20px;
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+}
+
+.emailBadgeUnverified {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e07070;
+  background: rgba(224, 112, 112, 0.12);
+  border: 1px solid rgba(224, 112, 112, 0.35);
+  border-radius: 20px;
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+}
+
+.emailVerificationActions {
+  display: grid;
+  gap: 0.5rem;
+}

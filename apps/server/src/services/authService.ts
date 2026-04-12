@@ -26,6 +26,8 @@ export interface AuthResult {
   ok: true;
   id: number;
   username: string;
+  email: string;
+  emailVerified: boolean;
 }
 
 export interface AuthFailure {
@@ -62,7 +64,7 @@ export async function registerUser(
     },
   });
 
-  return { ok: true, id: user.id, username: user.username };
+  return { ok: true, id: user.id, username: user.username, email: user.email, emailVerified: user.emailVerified };
 }
 
 export async function loginUser(
@@ -75,7 +77,7 @@ export async function loginUser(
   const valid = await verifyPassword(password, user.password);
   if (!valid) return { ok: false, code: "INVALID_PASSWORD" };
 
-  return { ok: true, id: user.id, username: user.username };
+  return { ok: true, id: user.id, username: user.username, email: user.email, emailVerified: user.emailVerified };
 }
 
 export interface UpdateUsernameResult {
@@ -167,4 +169,75 @@ export async function upsertUserPicture(
 export async function getExistingPicturePath(userId: number): Promise<string | null> {
   const pic = await prisma.userPicture.findUnique({ where: { userId } });
   return pic?.picturePath ?? null;
+}
+
+export async function getUserEmail(userId: number): Promise<string | null> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  return user?.email ?? null;
+}
+
+export async function resendVerificationEmail(userId: number): Promise<{ ok: true; email: string; token: string } | { ok: false; code: "USER_NOT_FOUND" | "ALREADY_VERIFIED" }> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, emailVerified: true } });
+  if (!user) return { ok: false, code: "USER_NOT_FOUND" };
+  if (user.emailVerified) return { ok: false, code: "ALREADY_VERIFIED" };
+
+  await prisma.emailToken.deleteMany({ where: { userId, type: "verify" } });
+  const token = await createEmailVerificationToken(userId);
+  return { ok: true, email: user.email, token };
+}
+
+// ── Email verification ────────────────────────────────────
+
+export async function createEmailVerificationToken(userId: number): Promise<string> {
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 h
+  await prisma.emailToken.create({ data: { userId, token, type: "verify", expiresAt } });
+  return token;
+}
+
+export async function verifyEmailToken(
+  token: string,
+): Promise<{ ok: true } | { ok: false; code: "INVALID_TOKEN" | "EXPIRED_TOKEN" }> {
+  const record = await prisma.emailToken.findUnique({ where: { token } });
+  if (!record || record.type !== "verify") return { ok: false, code: "INVALID_TOKEN" };
+  if (record.expiresAt < new Date()) {
+    await prisma.emailToken.delete({ where: { token } });
+    return { ok: false, code: "EXPIRED_TOKEN" };
+  }
+  await prisma.user.update({ where: { id: record.userId }, data: { emailVerified: true } });
+  await prisma.emailToken.delete({ where: { token } });
+  return { ok: true };
+}
+
+// ── Password reset ────────────────────────────────────────
+
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ ok: true; userEmail: string; token: string } | { ok: false; code: "USER_NOT_FOUND" }> {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return { ok: false, code: "USER_NOT_FOUND" };
+
+  await prisma.emailToken.deleteMany({ where: { userId: user.id, type: "reset" } });
+
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 h
+  await prisma.emailToken.create({ data: { userId: user.id, token, type: "reset", expiresAt } });
+
+  return { ok: true, userEmail: user.email, token };
+}
+
+export async function resetPasswordViaToken(
+  token: string,
+  newPassword: string,
+): Promise<{ ok: true } | { ok: false; code: "INVALID_TOKEN" | "EXPIRED_TOKEN" }> {
+  const record = await prisma.emailToken.findUnique({ where: { token } });
+  if (!record || record.type !== "reset") return { ok: false, code: "INVALID_TOKEN" };
+  if (record.expiresAt < new Date()) {
+    await prisma.emailToken.delete({ where: { token } });
+    return { ok: false, code: "EXPIRED_TOKEN" };
+  }
+  const hashed = await hashPassword(newPassword);
+  await prisma.user.update({ where: { id: record.userId }, data: { password: hashed } });
+  await prisma.emailToken.delete({ where: { token } });
+  return { ok: true };
 }

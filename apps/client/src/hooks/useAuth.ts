@@ -20,8 +20,8 @@ export function useAuth({ onLoginSuccess, onLogout }: UseAuthOptions) {
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
 
-  const handleAuthSuccess = async (data: { id: number; username: string; avatarUrl?: string | null }) => {
-    const user: AuthUser = { id: String(data.id), name: data.username, avatarUrl: data.avatarUrl ?? null }
+  const handleAuthSuccess = async (data: { id: number; username: string; avatarUrl?: string | null; email?: string | null; emailVerified?: boolean }) => {
+    const user: AuthUser = { id: String(data.id), name: data.username, avatarUrl: data.avatarUrl ?? null, email: data.email ?? null, emailVerified: data.emailVerified ?? false }
     setStoredAuthUser(user)
     setAuthUser(user)
     setAuthModal(null)

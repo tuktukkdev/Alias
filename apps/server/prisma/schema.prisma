@@ -13,6 +13,7 @@ model User {
   createdAt              DateTime            @default(now()) @map("created_at")
   password               String              @db.VarChar(255)
   email                  String              @unique @db.VarChar(255)
+  emailVerified          Boolean             @default(false) @map("email_verified")
   picture                UserPicture?
   stats                  UserStats?
   collections            UserCollection[]
@@ -22,6 +23,7 @@ model User {
   receivedFriendRequests UserFriendRequest[] @relation("FriendRequestTo")
   friends                UserFriend[]        @relation("UserFriendsUser")
   friendOf               UserFriend[]        @relation("UserFriendsFriend")
+  emailTokens            EmailToken[]
 
   @@map("users")
 }
@@ -150,4 +152,15 @@ model Game {
   winner      User?     @relation("GameWinner", fields: [winnerId], references: [id], onDelete: SetNull)
 
   @@map("games")
+}
+
+model EmailToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  token     String   @unique @db.VarChar(64)
+  type      String   @db.VarChar(16)
+  expiresAt DateTime @map("expires_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_tokens")
 }

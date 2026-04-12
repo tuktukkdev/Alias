@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { API_BASE } from '../config/client'
+import { resendVerificationRequest } from '../services/authApi'
 import type { AuthUser } from '../types/auth'
 import './ProfileScreen.css'
 
@@ -8,9 +9,10 @@ interface ProfileScreenProps {
   onBack: () => void
   onUsernameChanged: (newUsername: string) => void
   onAvatarChanged: (url: string) => void
+  onEmailVerified: () => void
 }
 
-export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged }: ProfileScreenProps) {
+export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged, onEmailVerified }: ProfileScreenProps) {
   const [newUsername, setNewUsername] = useState('')
   const [usernameError, setUsernameError] = useState('')
   const [usernameSuccess, setUsernameSuccess] = useState('')
@@ -29,6 +31,11 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
   const [avatarSuccess, setAvatarSuccess] = useState('')
   const [avatarLoading, setAvatarLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [emailVerified, setEmailVerified] = useState(user.emailVerified ?? false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
+  const [resendError, setResendError] = useState('')
 
   const handleUsernameSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -151,6 +158,31 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     }
   }
 
+  const handleResendVerification = async () => {
+    setResendLoading(true)
+    setResendMessage('')
+    setResendError('')
+    try {
+      const res = await resendVerificationRequest(user.id)
+      if (res.status === 409) {
+        setEmailVerified(true)
+        onEmailVerified()
+        setResendMessage('Your email is already verified.')
+        return
+      }
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string }
+        setResendError(data.error ?? 'Failed to send verification email.')
+        return
+      }
+      setResendMessage('Verification email sent! Check your inbox.')
+    } catch {
+      setResendError('Could not reach the server.')
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
   return (
     <main className="screen">
       <section className="panel profilePanel">
@@ -164,6 +196,37 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
         <p className="profileCurrentName">
           Current username: <strong>{user.name}</strong>
         </p>
+
+        {/* ── Email verification status ── */}
+        {user.email && (
+          <>
+            <div className="emailVerificationRow">
+              <span className="profileCurrentName">
+                Email: <strong>{user.email}</strong>
+              </span>
+              {emailVerified ? (
+                <span className="emailBadgeVerified">✓ Verified</span>
+              ) : (
+                <span className="emailBadgeUnverified">✗ Not verified</span>
+              )}
+            </div>
+            {!emailVerified && (
+              <div className="emailVerificationActions">
+                {resendMessage && <p className="formSuccess">{resendMessage}</p>}
+                {resendError && <p className="formError">{resendError}</p>}
+                <button
+                  type="button"
+                  className="backButton"
+                  onClick={() => void handleResendVerification()}
+                  disabled={resendLoading}
+                >
+                  {resendLoading ? 'Sending…' : 'Resend verification email'}
+                </button>
+              </div>
+            )}
+            <hr className="profileDivider" />
+          </>
+        )}
 
         {/* ── Profile picture ── */}
         <form className="profileForm" onSubmit={(e) => void handleAvatarUpload(e)}>

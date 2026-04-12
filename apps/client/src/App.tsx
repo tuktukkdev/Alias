@@ -10,6 +10,7 @@ import { GameScreen } from './components/GameScreen'
 import { Header } from './components/Header'
 import { JoinScreen } from './components/JoinScreen'
 import { ProfileScreen } from './components/ProfileScreen'
+import { ResetPasswordModal } from './components/ResetPasswordModal'
 import { RoomScreen } from './components/RoomScreen'
 import { StatsModal } from './components/StatsModal'
 import { useAuth } from './hooks/useAuth'
@@ -33,6 +34,11 @@ import {
   updateSettingsRequest,
   updateTimerRequest,
 } from './services/roomApi'
+import {
+  requestPasswordResetRequest,
+  resetPasswordRequest,
+  verifyEmailRequest,
+} from './services/authApi'
 import type { AuthUser } from './types/auth'
 import type { ChatMessage, RoomState, SelectedCollection, WsPayload } from './types/game'
 import { getStoredAuthUser } from './utils/authSession'
@@ -48,6 +54,14 @@ function App() {
   const [page, setPage] = useState<'main' | 'profile' | 'friends' | 'collections'>('main')
   const [showStats, setShowStats] = useState(false)
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0)
+
+  /* ── Email verification / password reset via URL token ── */
+  const [resetToken, setResetToken] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('resetToken')
+    if (token) window.history.replaceState(null, '', window.location.pathname)
+    return token
+  })
 
   /* ── Room / Game State ───────────────────────────────── */
   const [name, setName] = useState(() => getStoredAuthUser()?.name ?? '')
@@ -221,6 +235,30 @@ function App() {
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
+  const handleForgotPassword = async (email: string): Promise<boolean> => {
+    try {
+      const response = await requestPasswordResetRequest(email)
+      return response.ok
+    } catch {
+      return false
+    }
+  }
+
+  const handleResetPassword = async (newPassword: string): Promise<string | null> => {
+    if (!resetToken) return 'Invalid reset link.'
+    try {
+      const response = await resetPasswordRequest(resetToken, newPassword)
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string }
+        return data.error ?? 'Failed to reset password.'
+      }
+      setResetToken(null)
+      return null
+    } catch {
+      return 'Could not reach the server.'
+    }
+  }
+
   const updateCollections = async (collections: SelectedCollection[]) => {
     if (!roomState || !playerId || !isHost) return
     setShowCollectionPicker(false)
@@ -288,6 +326,19 @@ function App() {
     const interval = window.setInterval(() => void fetchPending(), 30000)
     return () => window.clearInterval(interval)
   }, [authUser?.id])
+
+  /* ── Effects: Email verification via URL token ───────── */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const verifyToken = params.get('verifyToken')
+    if (!verifyToken) return
+    window.history.replaceState(null, '', window.location.pathname)
+    void verifyEmailRequest(verifyToken).then((res) => {
+      setStatusMessage(res.ok ? 'Email verified successfully!' : 'Verification link is invalid or already used.')
+    }).catch(() => {
+      setStatusMessage('Could not verify email. Please try again later.')
+    })
+  }, [])
 
   /* ── Effects: Room Auto-Reconnect ────────────────────── */
   useEffect(() => {
@@ -377,6 +428,7 @@ function App() {
             turnSecondsRemaining: data.turnSecondsRemaining,
             currentTurnPlayerId: data.currentTurnPlayerId,
             waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
+            winner: data.winner,
           }))
           return
         }
@@ -480,6 +532,7 @@ function App() {
         onBack={() => setPage('main')}
         onUsernameChanged={handleUsernameChanged}
         onAvatarChanged={handleAvatarChanged}
+        onEmailVerified={() => updateAuthUser((prev: AuthUser) => ({ ...prev, emailVerified: true }))}
       />
     ) : page === 'friends' && authUser ? (
       <FriendsScreen
@@ -568,6 +621,13 @@ function App() {
           onClose={() => { setAuthModal(null); setAuthError('') }}
           onLogin={(u, p) => void onLogin(u, p)}
           onRegister={(u, e, p) => void onRegister(u, e, p)}
+          onForgotPassword={(email) => handleForgotPassword(email)}
+        />
+      )}
+      {resetToken && (
+        <ResetPasswordModal
+          onClose={() => setResetToken(null)}
+          onSubmit={(newPassword) => handleResetPassword(newPassword)}
         />
       )}
     </div>

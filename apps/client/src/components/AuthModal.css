@@ -84,3 +84,25 @@
   color: #e07070;
   font-size: 0.85rem;
 }
+
+.authSuccess {
+  margin: 0;
+  color: #6ecf8e;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.authForgotLink {
+  background: none;
+  border: none;
+  color: #7eb3e8;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+}
+
+.authForgotLink:hover {
+  color: #aecff5;
+}
