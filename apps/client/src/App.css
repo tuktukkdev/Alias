@@ -187,6 +187,20 @@
   opacity: 0.75;
 }
 
+.friendsBadge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #e05555;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
 .dropdownDivider {
   height: 1px;
   background: #2f3a4a;
@@ -480,6 +494,291 @@
 .exitButton:focus-visible {
   outline: 2px solid #f87171;
   outline-offset: 2px;
+}
+
+/* ── Profile page ────────────────────────────────────────── */
+
+.profilePanel {
+  width: min(500px, 100%);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.backButton {
+  border: 1px solid #2f3a4a;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.profileCurrentName {
+  margin: 0;
+  color: #7a94ae;
+  font-size: 0.9rem;
+}
+
+.profileForm {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.profileDivider {
+  border: none;
+  border-top: 1px solid #2f3a4a;
+  margin: 0.25rem 0;
+}
+
+.avatarPreviewWrap {
+  display: flex;
+  justify-content: center;
+}
+
+.avatarPreviewImg {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2f3a4a;
+}
+
+.avatarPreviewDefault {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #1f8fb3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f2fbff;
+}
+
+.avatarPreviewDefault svg {
+  width: 54px;
+  height: 54px;
+}
+
+.formError {
+  margin: 0;
+  color: #e07070;
+  font-size: 0.85rem;
+}
+
+.formSuccess {
+  margin: 0;
+  color: #6dd89a;
+  font-size: 0.85rem;
+}
+
+/* ── Stats modal ─────────────────────────────────────────── */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  z-index: 200;
+}
+
+.statsDialog {
+  width: min(340px, calc(100vw - 2rem));
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #2f3a4a;
+  background: #101925;
+  color: #e6eefc;
+}
+
+.statsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.authTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.modalCloseButton {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalCloseButton:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.statsTable tr + tr td {
+  border-top: 1px solid #1e2d3e;
+}
+
+.statsLabel {
+  padding: 0.55rem 0;
+  color: #7a94ae;
+  font-size: 0.9rem;
+}
+
+.statsValue {
+  padding: 0.55rem 0;
+  text-align: right;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #e6eefc;
+}
+
+/* ── Friends page ────────────────────────────────────────── */
+
+.friendsPanel {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.friendsSection {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.friendsBadgeInline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  margin-left: 0.5rem;
+  border-radius: 10px;
+  background: #e05555;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.friendsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.friendsItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: #182334;
+  gap: 0.5rem;
+}
+
+.friendsName {
+  flex: 1;
+  font-weight: 600;
+  color: #d9e3f1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friendsActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.friendsAcceptBtn {
+  border: 1px solid #2a6e4a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: #1a4a35;
+  color: #7ee8a2;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsAcceptBtn:hover {
+  background: #235c43;
+}
+
+.friendsDeclineBtn {
+  border: 1px solid #4e2a2a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  color: #e07070;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsDeclineBtn:hover {
+  background: rgba(224, 112, 112, 0.1);
+}
+
+.friendsRemoveBtn {
+  border: 1px solid #2f3a4a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsRemoveBtn:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.friendsSendForm {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.friendsSendForm .input {
+  flex: 1;
 }
 
 .chatSection {

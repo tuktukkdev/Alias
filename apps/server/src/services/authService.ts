@@ -77,3 +77,94 @@ export async function loginUser(
 
   return { ok: true, id: user.id, username: user.username };
 }
+
+export interface UpdateUsernameResult {
+  ok: true;
+  username: string;
+}
+export interface UpdateUsernameFailure {
+  ok: false;
+  code: "USER_NOT_FOUND" | "USERNAME_TAKEN";
+}
+
+export async function updateUsername(
+  userId: number,
+  newUsername: string
+): Promise<UpdateUsernameResult | UpdateUsernameFailure> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, code: "USER_NOT_FOUND" };
+
+  const taken = await prisma.user.findUnique({ where: { username: newUsername } });
+  if (taken && taken.id !== userId) return { ok: false, code: "USERNAME_TAKEN" };
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { username: newUsername },
+  });
+  return { ok: true, username: updated.username };
+}
+
+export interface UpdatePasswordResult {
+  ok: true;
+}
+export interface UpdatePasswordFailure {
+  ok: false;
+  code: "USER_NOT_FOUND" | "INVALID_PASSWORD";
+}
+
+export async function updatePassword(
+  userId: number,
+  currentPassword: string,
+  newPassword: string
+): Promise<UpdatePasswordResult | UpdatePasswordFailure> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return { ok: false, code: "USER_NOT_FOUND" };
+
+  const valid = await verifyPassword(currentPassword, user.password);
+  if (!valid) return { ok: false, code: "INVALID_PASSWORD" };
+
+  const hashed = await hashPassword(newPassword);
+  await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+  return { ok: true };
+}
+
+export interface UserStats {
+  guessed: number;
+  skipped: number;
+  wins: number;
+  losses: number;
+}
+
+export async function getUserStats(userId: number): Promise<UserStats | null> {
+  const stats = await prisma.userStats.findUnique({ where: { userId } });
+  if (!stats) return null;
+  return {
+    guessed: stats.guessed,
+    skipped: stats.skipped,
+    wins: stats.wins,
+    losses: stats.losses,
+  };
+}
+
+export async function getUserAvatarUrl(userId: number): Promise<string | null> {
+  const pic = await prisma.userPicture.findUnique({ where: { userId } });
+  if (!pic) return null;
+  return `http://localhost:3000/uploads/avatars/${pic.picturePath}`;
+}
+
+export async function upsertUserPicture(
+  userId: number,
+  filename: string,
+  format: string
+): Promise<void> {
+  await prisma.userPicture.upsert({
+    where: { userId },
+    update: { picturePath: filename, format },
+    create: { userId, picturePath: filename, format },
+  });
+}
+
+export async function getExistingPicturePath(userId: number): Promise<string | null> {
+  const pic = await prisma.userPicture.findUnique({ where: { userId } });
+  return pic?.picturePath ?? null;
+}

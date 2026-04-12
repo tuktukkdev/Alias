@@ -351,11 +351,13 @@ export const registerRoomRoutes = (app: Express): void => {
       return res.status(403).json({ error: "player is not in this room" });
     }
 
+    activePlayer.score = Math.max(0, activePlayer.score - 1);
+
     const skippedMessage: ChatMessage = {
       id: createId("msg"),
       playerId: "system",
       playerName: "System",
-      text: `${activePlayer.name} skipped the word.`,
+      text: `${activePlayer.name} skipped the word. -1 point.`,
       createdAt: new Date().toISOString(),
     };
 

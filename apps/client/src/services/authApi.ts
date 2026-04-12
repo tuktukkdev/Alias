@@ -3,6 +3,7 @@ import { API_BASE } from '../config/client'
 export interface AuthResponse {
   id: number
   username: string
+  avatarUrl?: string | null
 }
 
 export interface AuthErrorResponse {

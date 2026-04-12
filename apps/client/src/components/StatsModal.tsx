@@ -1,0 +1,83 @@
+import { useEffect, useState } from 'react'
+import { API_BASE } from '../config/client'
+import type { AuthUser } from '../types/auth'
+
+interface UserStats {
+  guessed: number
+  skipped: number
+  wins: number
+  losses: number
+}
+
+interface StatsModalProps {
+  user: AuthUser
+  onClose: () => void
+}
+
+export function StatsModal({ user, onClose }: StatsModalProps) {
+  const [stats, setStats] = useState<UserStats | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/stats/${user.id}`)
+        if (!res.ok) {
+          setError('Could not load stats.')
+          return
+        }
+        const data = (await res.json()) as UserStats
+        setStats(data)
+      } catch {
+        setError('Could not reach the server.')
+      }
+    }
+    void load()
+  }, [user.id])
+
+  return (
+    <div className="modalBackdrop" onClick={onClose}>
+      <div
+        className="authDialog statsDialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Stats"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="statsHeader">
+          <h2 className="authTitle">Stats — {user.name}</h2>
+          <button type="button" className="modalCloseButton" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </div>
+
+        {error && <p className="formError">{error}</p>}
+
+        {!stats && !error && <p className="hintText">Loading…</p>}
+
+        {stats && (
+          <table className="statsTable">
+            <tbody>
+              <tr>
+                <td className="statsLabel">Words guessed</td>
+                <td className="statsValue">{stats.guessed}</td>
+              </tr>
+              <tr>
+                <td className="statsLabel">Words skipped</td>
+                <td className="statsValue">{stats.skipped}</td>
+              </tr>
+              <tr>
+                <td className="statsLabel">Wins</td>
+                <td className="statsValue">{stats.wins}</td>
+              </tr>
+              <tr>
+                <td className="statsLabel">Losses</td>
+                <td className="statsValue">{stats.losses}</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}

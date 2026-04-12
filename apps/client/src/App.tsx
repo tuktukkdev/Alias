@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import './App.css'
 import { ROOM_PATH_PREFIX } from './config/client'
 import { AuthModal } from './components/AuthModal'
+import { FriendsScreen } from './components/FriendsScreen'
 import { GameScreen } from './components/GameScreen'
 import { Header } from './components/Header'
 import { JoinScreen } from './components/JoinScreen'
+import { ProfileScreen } from './components/ProfileScreen'
 import { RoomScreen } from './components/RoomScreen'
+import { StatsModal } from './components/StatsModal'
 import {
   loginRequest,
   parseAuthErrorResponse,
@@ -57,6 +60,9 @@ function App() {
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null)
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
+  const [page, setPage] = useState<'main' | 'profile' | 'friends'>('main')
+  const [showStats, setShowStats] = useState(false)
+  const [pendingFriendRequests, setPendingFriendRequests] = useState(0)
 
   const [name, setName] = useState(() => getStoredAuthUser()?.name ?? '')
   const [roomCode, setRoomCode] = useState(() => getRoomCodeFromPath(window.location.pathname))
@@ -412,6 +418,29 @@ function App() {
       setName(authUser.name)
     }
   }, [authUser])
+
+  useEffect(() => {
+    if (!authUser) {
+      setPendingFriendRequests(0)
+      return
+    }
+
+    const fetchPending = async () => {
+      try {
+        const res = await fetch(`http://localhost:3000/friends/${authUser.id}/pending-count`)
+        if (res.ok) {
+          const data = (await res.json()) as { count: number }
+          setPendingFriendRequests(data.count)
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    void fetchPending()
+    const interval = window.setInterval(() => void fetchPending(), 30000)
+    return () => window.clearInterval(interval)
+  }, [authUser?.id])
 
   useEffect(() => {
     if (roomState) {
@@ -939,7 +968,7 @@ function App() {
         return
       }
       const data = await parseAuthResponse(response)
-      const user: AuthUser = { id: String(data.id), name: data.username }
+      const user: AuthUser = { id: String(data.id), name: data.username, avatarUrl: data.avatarUrl ?? null }
       setStoredAuthUser(user)
       setAuthUser(user)
       setAuthModal(null)
@@ -977,7 +1006,7 @@ function App() {
         return
       }
       const data = await parseAuthResponse(response)
-      const user: AuthUser = { id: String(data.id), name: data.username }
+      const user: AuthUser = { id: String(data.id), name: data.username, avatarUrl: data.avatarUrl ?? null }
       setStoredAuthUser(user)
       setAuthUser(user)
       setAuthModal(null)
@@ -1012,14 +1041,45 @@ function App() {
     setPlayerId(null)
     setActiveWord(null)
     setChatMessages([])
+    setPage('main')
+    setShowStats(false)
+    setPendingFriendRequests(0)
     window.history.replaceState(null, '', '/')
   }
 
-  const handleNavigate = (_page: 'profile' | 'friends' | 'stats' | 'collections') => {
-    // TODO: implement page navigation when those pages are ready
+  const handleNavigate = (nav: 'profile' | 'friends' | 'stats' | 'collections') => {
+    if (nav === 'profile') {
+      setPage('profile')
+    } else if (nav === 'friends') {
+      setPage('friends')
+    } else if (nav === 'stats') {
+      setShowStats(true)
+    }
   }
 
-  const screenContent = roomState?.started ? (
+  const screenContent = page === 'profile' && authUser ? (
+    <ProfileScreen
+      user={authUser}
+      onBack={() => setPage('main')}
+      onUsernameChanged={(newName) => {
+        const updated: AuthUser = { ...authUser, name: newName }
+        setStoredAuthUser(updated)
+        setAuthUser(updated)
+        setName(newName)
+      }}
+      onAvatarChanged={(url) => {
+        const updated: AuthUser = { ...authUser, avatarUrl: url }
+        setStoredAuthUser(updated)
+        setAuthUser(updated)
+      }}
+    />
+  ) : page === 'friends' && authUser ? (
+    <FriendsScreen
+      user={authUser}
+      onBack={() => setPage('main')}
+      onPendingCountChange={setPendingFriendRequests}
+    />
+  ) : roomState?.started ? (
     <GameScreen
       roomState={roomState}
       playerId={playerId}
@@ -1084,12 +1144,16 @@ function App() {
     <div className="appLayout">
       <Header
         user={authUser}
+        pendingFriendRequests={pendingFriendRequests}
         onLoginClick={() => setAuthModal('login')}
         onRegisterClick={() => setAuthModal('register')}
         onLogout={handleLogout}
         onNavigate={handleNavigate}
       />
       {screenContent}
+      {showStats && authUser && (
+        <StatsModal user={authUser} onClose={() => setShowStats(false)} />
+      )}
       {authModal && (
         <AuthModal
           initialTab={authModal}
