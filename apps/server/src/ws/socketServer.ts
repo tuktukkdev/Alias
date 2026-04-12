@@ -34,7 +34,7 @@ export const registerSocketServer = (server: Server): WebSocketServer => {
     record.connectedPlayerIds.add(playerId);
 
     if (record.startRequested && !record.started && allPlayersConnected(record)) {
-      startRoomGame(roomId, record, broadcasters);
+      void startRoomGame(roomId, record, broadcasters);
     } else {
       broadcastRoomState(roomId, record);
       if (record.started) {

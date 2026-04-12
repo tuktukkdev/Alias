@@ -55,6 +55,7 @@ export interface RoomRecord {
   currentWord: string | null;
   waitingForWordResolutionAtZero: boolean;
   usedWords: Set<string>;
+  wordPool: string[] | null;
   playerStats: Map<string, PlayerGameStats>;
   gameStartedAt: Date | null;
   winner: WinnerInfo | null;

@@ -1,7 +1,7 @@
 import { prisma } from "../db/prisma";
 import { GAME_START_DELAY_MS, roomSockets, roomTickIntervals, rooms } from "../state/serverState";
 import { Player, PlayerGameStats, RoomBroadcasters, RoomRecord, RoomStateBroadcastEvent, WinnerInfo } from "../types/game";
-import { pickWord } from "./wordService";
+import { loadWordPool, pickWordFromPool } from "./wordService";
 
 export const buildRoomStatePayload = (
   roomId: string,
@@ -30,11 +30,7 @@ export const clearRoomTickInterval = (roomId: string): void => {
 };
 
 export const getNextWord = async (record: RoomRecord): Promise<string> => {
-  const word = await pickWord(
-    record.room.settings.selectedCollections,
-    record.room.settings.difficulty,
-    record.usedWords,
-  );
+  const word = pickWordFromPool(record);
   record.usedWords.add(word);
   return word;
 };
@@ -207,16 +203,16 @@ export const removePlayerPermanently = (
   broadcasters.broadcastRoomState(roomId, record);
 };
 
-export const startRoomGame = (
+export const startRoomGame = async (
   roomId: string,
   record: RoomRecord,
   broadcasters: RoomBroadcasters,
-): void => {
+): Promise<void> => {
   if (record.started) {
     return;
   }
 
-  // Add a short lead time so all clients can render the start frame before timer ticks.
+  // Mark as started synchronously so route responses reflect correct state immediately.
   record.started = true;
   record.startRequested = false;
   record.startedAt = new Date(Date.now() + GAME_START_DELAY_MS).toISOString();
@@ -225,16 +221,21 @@ export const startRoomGame = (
   record.currentWord = null;
   record.waitingForWordResolutionAtZero = false;
   record.usedWords.clear();
+  record.wordPool = null;
   record.playerStats = new Map();
   record.gameStartedAt = new Date();
   record.winner = null;
 
-  void getNextWord(record).then((word) => {
-    record.currentWord = word;
-    broadcasters.broadcastActiveWord(roomId, record);
-  });
-
   broadcasters.broadcastRoomState(roomId, record);
+
+  // Load word pool into memory (uses Redis for default collections, DB for custom).
+  // This completes well within the GAME_START_DELAY_MS countdown window.
+  await loadWordPool(record);
+
+  const word = await getNextWord(record);
+  record.currentWord = word;
+  broadcasters.broadcastActiveWord(roomId, record);
+
   startRoomTickLoop(roomId, broadcasters);
 };
 

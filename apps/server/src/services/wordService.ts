@@ -1,106 +1,70 @@
 import { prisma } from "../db/prisma";
-import type { SelectedCollection } from "../types/game";
+import { getDefaultCollectionWordsCached, getGeneralWordsCached } from "./cacheService";
+import type { RoomRecord, SelectedCollection } from "../types/game";
 
 /**
- * Pick a random word from the selected collections, falling back to the
- * general `cards` table filtered by difficulty when collections are empty
- * or exhausted.  Never returns a word already in `usedWords`.
+ * Build the full word pool for a room at game-start time.
+ * - Custom collection words are loaded directly from the DB.
+ * - Default collection words are served from the Redis cache (DB fallback).
+ * - If no collections are selected, the general cards pool is used instead.
+ * The result is stored on the record so that all subsequent word picks
+ * are pure in-memory operations with zero DB/Redis round-trips.
  */
-export async function pickWord(
-  selectedCollections: SelectedCollection[],
-  difficulty: number,
-  usedWords: Set<string>,
-): Promise<string> {
+export async function loadWordPool(record: RoomRecord): Promise<void> {
+  const { selectedCollections, difficulty } = record.room.settings;
   const safeDifficulty = Math.max(1, Math.min(3, difficulty));
+  const words = new Set<string>();
 
-  // 1. Try selected collections
-  if (selectedCollections.length > 0) {
-    const word = await pickFromSelectedCollections(selectedCollections, usedWords);
-    if (word) return word;
-  }
+  const customIds = selectedCollections.filter((c) => c.type === "custom").map((c) => c.id);
+  const defaultIds = selectedCollections.filter((c) => c.type === "default").map((c) => c.id);
 
-  // 2. Fall back to general cards table filtered by difficulty
-  const fallback = await pickFromCardsTable(safeDifficulty, usedWords);
-  if (fallback) return fallback;
-
-  // 3. Last resort – pick any card ignoring difficulty
-  const any = await pickFromCardsTable(null, usedWords);
-  if (any) return any;
-
-  // 4. Absolute fallback
-  return "слово";
-}
-
-async function pickFromSelectedCollections(
-  collections: SelectedCollection[],
-  usedWords: Set<string>,
-): Promise<string | null> {
-  const defaultIds = collections.filter((c) => c.type === "default").map((c) => c.id);
-  const customIds = collections.filter((c) => c.type === "custom").map((c) => c.id);
-  const excludedWords = [...usedWords];
-
-  // Try custom collections first (user-created content takes priority)
+  // Custom collections – always fresh from DB (user-owned data)
   if (customIds.length > 0) {
-    const word = await pickRandomUserCard(customIds, excludedWords);
-    if (word) return word;
+    const rows = await prisma.userCard.findMany({
+      where: { userCollectionId: { in: customIds } },
+      select: { word: true },
+    });
+    rows.forEach((r) => words.add(r.word));
   }
 
-  // Then default collections
-  if (defaultIds.length > 0) {
-    const word = await pickRandomDefaultCard(defaultIds, excludedWords);
-    if (word) return word;
+  // Default collections – served from Redis cache
+  for (const id of defaultIds) {
+    const colWords = await getDefaultCollectionWordsCached(id);
+    colWords.forEach((w) => words.add(w));
   }
 
-  return null;
+  // Fallback: no collections chosen – use general cards by difficulty
+  if (words.size === 0) {
+    const byDiff = await getGeneralWordsCached(safeDifficulty);
+    byDiff.forEach((w) => words.add(w));
+  }
+
+  // Last resort: all cards
+  if (words.size === 0) {
+    const all = await getGeneralWordsCached(null);
+    all.forEach((w) => words.add(w));
+  }
+
+  record.wordPool = [...words];
 }
 
-async function pickRandomUserCard(
-  collectionIds: number[],
-  excludedWords: string[],
-): Promise<string | null> {
-  const rows = await prisma.userCard.findMany({
-    where: {
-      userCollectionId: { in: collectionIds },
-      ...(excludedWords.length > 0 ? { word: { notIn: excludedWords } } : {}),
-    },
-    select: { word: true },
-  });
-
-  if (rows.length === 0) return null;
-  return rows[Math.floor(Math.random() * rows.length)].word;
-}
-
-async function pickRandomDefaultCard(
-  collectionIds: number[],
-  excludedWords: string[],
-): Promise<string | null> {
-  const rows = await prisma.card.findMany({
-    where: {
-      links: { some: { collectionId: { in: collectionIds } } },
-      ...(excludedWords.length > 0 ? { word: { notIn: excludedWords } } : {}),
-    },
-    select: { word: true },
-  });
-
-  if (rows.length === 0) return null;
-  return rows[Math.floor(Math.random() * rows.length)].word;
-}
-
-async function pickFromCardsTable(
-  difficulty: number | null,
-  usedWords: Set<string>,
-): Promise<string | null> {
-  const excludedWords = [...usedWords];
-  const rows = await prisma.card.findMany({
-    where: {
-      ...(difficulty !== null ? { difficulty } : {}),
-      ...(excludedWords.length > 0 ? { word: { notIn: excludedWords } } : {}),
-    },
-    select: { word: true },
-  });
-
-  if (rows.length === 0) return null;
-  return rows[Math.floor(Math.random() * rows.length)].word;
+/**
+ * Pick a random word from the pre-loaded in-memory pool, excluding already
+ * used words.  When the pool is exhausted the used-word set is reset so the
+ * game can continue seamlessly.
+ */
+export function pickWordFromPool(record: RoomRecord): string {
+  const pool = record.wordPool;
+  if (pool && pool.length > 0) {
+    const available = pool.filter((w) => !record.usedWords.has(w));
+    if (available.length > 0) {
+      return available[Math.floor(Math.random() * available.length)];
+    }
+    // All words exhausted – recycle the pool
+    record.usedWords.clear();
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  return "слово";
 }
 
 /**

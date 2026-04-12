@@ -7,6 +7,8 @@ import { registerCollectionsRoutes } from "./routes/collectionsRoutes";
 import { registerFriendsRoutes } from "./routes/friendsRoutes";
 import { registerRoomRoutes } from "./routes/roomRoutes";
 import { registerSocketServer } from "./ws/socketServer";
+import { initRedis } from "./db/redis";
+import { preloadDefaultCollections } from "./services/cacheService";
 
 const app = express();
 
@@ -35,6 +37,7 @@ registerRoomRoutes(app);
 
 const server = app.listen(3000, () => {
   console.log("Server running on port 3000");
+  void initRedis().then(() => preloadDefaultCollections());
 });
 
 registerSocketServer(server);

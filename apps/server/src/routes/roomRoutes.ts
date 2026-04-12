@@ -80,6 +80,7 @@ export const registerRoomRoutes = (app: Express): void => {
       currentWord: null,
       waitingForWordResolutionAtZero: false,
       usedWords: new Set(),
+      wordPool: null,
       playerStats: new Map(),
       gameStartedAt: null,
       winner: null,
@@ -262,7 +263,7 @@ export const registerRoomRoutes = (app: Express): void => {
     record.startRequested = true;
 
     if (allPlayersConnected(record)) {
-      startRoomGame(roomId, record, broadcasters);
+      void startRoomGame(roomId, record, broadcasters);
     } else {
       broadcastRoomState(roomId, record);
     }
