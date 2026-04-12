@@ -1,110 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import './App.css'
-
-interface Player {
-  id: string
-  name: string
-  score: number
-}
-
-interface GameRoomSettings {
-  timer: number
-  winScore: number
-}
-
-interface GameRoom {
-  players: Player[]
-  hostId: string
-  settings: GameRoomSettings
-}
-
-interface RoomState {
-  roomId: string
-  room: GameRoom
-  started?: boolean
-  startRequested?: boolean
-  startedAt?: string | null
-  connectedPlayerIds?: string[]
-  turnSecondsRemaining?: number | null
-  currentTurnPlayerId?: string | null
-  waitingForWordResolutionAtZero?: boolean
-}
-
-interface ChatMessage {
-  id: string
-  playerId: string
-  playerName: string
-  text: string
-  createdAt: string
-}
-
-interface StoredRoomSession {
-  roomId: string
-  playerId: string
-  name: string
-}
-
-const API_BASE = 'http://localhost:3000'
-const ROOM_PATH_PREFIX = '/room/'
-const SESSION_STORAGE_KEY = 'alias-room-session'
-
-const getRoomCodeFromPath = (pathName: string): string => {
-  if (!pathName.startsWith(ROOM_PATH_PREFIX)) {
-    return ''
-  }
-
-  const rawCode = pathName.slice(ROOM_PATH_PREFIX.length)
-  return decodeURIComponent(rawCode).trim()
-}
-
-const getStoredRoomSession = (): StoredRoomSession | null => {
-  try {
-    const rawValue = window.localStorage.getItem(SESSION_STORAGE_KEY)
-    if (!rawValue) {
-      return null
-    }
-
-    const parsed = JSON.parse(rawValue) as Partial<StoredRoomSession>
-    if (!parsed.roomId || !parsed.playerId || !parsed.name) {
-      return null
-    }
-
-    return {
-      roomId: parsed.roomId,
-      playerId: parsed.playerId,
-      name: parsed.name,
-    }
-  } catch {
-    return null
-  }
-}
-
-const setStoredRoomSession = (session: StoredRoomSession): void => {
-  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
-}
-
-const clearStoredRoomSession = (): void => {
-  window.localStorage.removeItem(SESSION_STORAGE_KEY)
-}
-
-const pushRoomPath = (roomId: string): void => {
-  const targetPath = `${ROOM_PATH_PREFIX}${encodeURIComponent(roomId)}`
-  if (window.location.pathname !== targetPath) {
-    window.history.pushState({}, '', targetPath)
-  }
-}
-
-const mapRoomState = (data: RoomState): RoomState => ({
-  roomId: data.roomId,
-  room: data.room,
-  started: data.started,
-  startRequested: data.startRequested,
-  startedAt: data.startedAt,
-  connectedPlayerIds: data.connectedPlayerIds,
-  turnSecondsRemaining: data.turnSecondsRemaining,
-  currentTurnPlayerId: data.currentTurnPlayerId,
-  waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
-})
+import { ROOM_PATH_PREFIX } from './config/client'
+import { GameScreen } from './components/GameScreen'
+import { JoinScreen } from './components/JoinScreen'
+import { RoomScreen } from './components/RoomScreen'
+import {
+  createRoomRequest,
+  fetchRoomChatRequest,
+  fetchRoomStateRequest,
+  joinRoomRequest,
+  mapRoomState,
+  parseChatListResponse,
+  parseChatMessageResponse,
+  parseRoomJoinResponse,
+  parseRoomStateResponse,
+  sendChatMessageRequest,
+  skipWordRequest,
+  startGameRequest,
+  updateTimerRequest,
+} from './services/roomApi'
+import type { ChatMessage, Player, RoomState, VolumeMenuState, WsPayload } from './types/game'
+import { getRoomCodeFromPath, pushRoomPath } from './utils/roomPath'
+import { clearStoredRoomSession, getStoredRoomSession, setStoredRoomSession } from './utils/roomSession'
 
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
@@ -134,13 +51,9 @@ function App() {
   const [gameStartsIn, setGameStartsIn] = useState(0)
   const [activeWord, setActiveWord] = useState<string | null>(null)
   const [playerVolumes, setPlayerVolumes] = useState<Record<string, number>>({})
-  const [volumeMenu, setVolumeMenu] = useState<{
-    playerId: string
-    playerName: string
-    x: number
-    y: number
-  } | null>(null)
+  const [volumeMenu, setVolumeMenu] = useState<VolumeMenuState | null>(null)
   const setVoiceStatus = (_: string) => {}
+
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
   const volumeMenuRef = useRef<HTMLDivElement | null>(null)
@@ -189,11 +102,7 @@ function App() {
     }
   }
 
-  const openVolumeMenu = (
-    event: React.MouseEvent,
-    targetPlayerId: string,
-    targetPlayerName: string,
-  ) => {
+  const openVolumeMenu = (event: MouseEvent, targetPlayerId: string, targetPlayerName: string) => {
     event.preventDefault()
 
     const menuWidth = 250
@@ -428,14 +337,7 @@ function App() {
     }
 
     setStatusMessage(options?.isAutoReconnect ? 'Reconnecting to room...' : 'Joining room...')
-    const response = await fetch(`${API_BASE}/rooms/${trimmedRoomCode}/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: trimmedName,
-        playerId: existingPlayerId,
-      }),
-    })
+    const response = await joinRoomRequest(trimmedRoomCode, trimmedName, existingPlayerId)
 
     if (response.status === 404) {
       setStatusMessage('Room not found. Check the room code and try again.')
@@ -445,8 +347,8 @@ function App() {
       return
     }
 
-        if (response.status === 403) {
-      setStatusMessage("Game already started; only existing players can reconnect.")
+    if (response.status === 403) {
+      setStatusMessage('Game already started; only existing players can reconnect.')
       if (options?.isAutoReconnect) {
         clearStoredRoomSession()
       }
@@ -458,7 +360,7 @@ function App() {
       return
     }
 
-    const data = (await response.json()) as RoomState & { playerId: string }
+    const data = await parseRoomJoinResponse(response)
     setName(trimmedName)
     setRoomCode(data.roomId)
     setPlayerId(data.playerId)
@@ -516,11 +418,11 @@ function App() {
 
     const timer = window.setInterval(async () => {
       try {
-        const response = await fetch(`${API_BASE}/rooms/${roomState.roomId}`)
+        const response = await fetchRoomStateRequest(roomState.roomId)
         if (!response.ok) {
           return
         }
-        const data = (await response.json()) as RoomState
+        const data = await parseRoomStateResponse(response)
         setRoomState(mapRoomState(data))
       } catch {
         // Ignore poll errors to keep the current screen usable.
@@ -537,12 +439,12 @@ function App() {
 
     const loadMessages = async () => {
       try {
-        const response = await fetch(`${API_BASE}/rooms/${roomState.roomId}/chat`)
+        const response = await fetchRoomChatRequest(roomState.roomId)
         if (!response.ok) {
           return
         }
 
-        const data = (await response.json()) as { messages: ChatMessage[] }
+        const data = await parseChatListResponse(response)
         setChatMessages(data.messages)
       } catch {
         // Ignore load errors to keep game screen responsive.
@@ -564,26 +466,7 @@ function App() {
 
     socket.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data) as {
-          type?: string
-          message?: ChatMessage
-          roomId?: string
-          room?: GameRoom
-          started?: boolean
-          startRequested?: boolean
-          startedAt?: string | null
-          connectedPlayerIds?: string[]
-          turnSecondsRemaining?: number | null
-          currentTurnPlayerId?: string | null
-          waitingForWordResolutionAtZero?: boolean
-          word?: string | null
-          fromPlayerId?: string
-          signal?: {
-            type?: 'offer' | 'answer' | 'ice'
-            sdp?: string
-            candidate?: RTCIceCandidateInit
-          }
-        }
+        const data = JSON.parse(event.data) as WsPayload
 
         if (data.type === 'room_state' && data.roomId === roomState.roomId && data.room) {
           setRoomState(
@@ -851,18 +734,14 @@ function App() {
     }
 
     setStatusMessage('Creating room...')
-    const response = await fetch(`${API_BASE}/rooms`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: trimmedName }),
-    })
+    const response = await createRoomRequest(trimmedName)
 
     if (!response.ok) {
       setStatusMessage('Failed to create room. Is the server running on port 3000?')
       return
     }
 
-    const data = (await response.json()) as RoomState & { playerId: string }
+    const data = await parseRoomJoinResponse(response)
     setName(trimmedName)
     setRoomCode(data.roomId)
     setPlayerId(data.playerId)
@@ -890,18 +769,14 @@ function App() {
       },
     })
 
-    const response = await fetch(`${API_BASE}/rooms/${roomState.roomId}/settings`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerId, timer: nextTimer }),
-    })
+    const response = await updateTimerRequest(roomState.roomId, playerId, nextTimer)
 
     if (!response.ok) {
       setStatusMessage('Failed to update timer setting.')
       return
     }
 
-    const data = (await response.json()) as RoomState
+    const data = await parseRoomStateResponse(response)
     setRoomState(mapRoomState(data))
   }
 
@@ -910,18 +785,14 @@ function App() {
       return
     }
 
-    const response = await fetch(`${API_BASE}/rooms/${roomState.roomId}/start`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerId }),
-    })
+    const response = await startGameRequest(roomState.roomId, playerId)
 
     if (!response.ok) {
       setStatusMessage('Could not start game.')
       return
     }
 
-    const data = (await response.json()) as RoomState
+    const data = await parseRoomStateResponse(response)
     setRoomState(mapRoomState(data))
 
     if (data.started) {
@@ -942,18 +813,14 @@ function App() {
       return
     }
 
-    const response = await fetch(`${API_BASE}/rooms/${roomState.roomId}/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerId, text: trimmedText }),
-    })
+    const response = await sendChatMessageRequest(roomState.roomId, playerId, trimmedText)
 
     if (!response.ok) {
       setStatusMessage('Could not send message.')
       return
     }
 
-    const data = (await response.json()) as { message: ChatMessage }
+    const data = await parseChatMessageResponse(response)
     setChatMessages((current) => {
       if (current.some((message) => message.id === data.message.id)) {
         return current
@@ -968,312 +835,78 @@ function App() {
       return
     }
 
-    const response = await fetch(`${API_BASE}/rooms/${roomState.roomId}/skip`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerId }),
-    })
+    const response = await skipWordRequest(roomState.roomId, playerId)
 
     if (!response.ok) {
       setStatusMessage('Could not skip word.')
       return
     }
 
-    const data = (await response.json()) as RoomState
+    const data = await parseRoomStateResponse(response)
     setRoomState(mapRoomState(data))
     setStatusMessage('Word skipped.')
   }
 
   if (roomState?.started) {
-    const activePlayer = roomState.room.players.find(
-      (player) => player.id === roomState.currentTurnPlayerId,
-    )
-    const turnSecondsLeft = roomState.turnSecondsRemaining ?? roomState.room.settings.timer
-    const isActivePlayer = Boolean(playerId && roomState.currentTurnPlayerId === playerId)
-    const speakingPlayerId = gameStartsIn === 0 ? roomState.currentTurnPlayerId : null
-
     return (
-      <main className="screen">
-        <section className="panel gamePanel">
-          <h1 className="title">Game Room {roomState.roomId}</h1>
-          <p className="turnTimer">
-            {gameStartsIn > 0 ? (
-              <>
-                Game starts in <strong>{gameStartsIn}s</strong>
-              </>
-            ) : roomState.waitingForWordResolutionAtZero ? (
-              <>
-                Time Left: <strong>0s</strong>
-                {activePlayer ? ` | Waiting for "${activePlayer.name}" word to be guessed or skipped` : ''}
-              </>
-            ) : (
-              <>
-                Time Left: <strong>{turnSecondsLeft}s</strong>
-                {activePlayer ? ` | Turn: ${activePlayer.name}` : ''}
-              </>
-            )}
-          </p>
-
-          <div className="gameLayout">
-            <div className="gameColumn scoreboardSection">
-              <h2 className="sectionTitle">Players Score</h2>
-              <table className="scoreboardTable">
-                <thead>
-                  <tr>
-                    <th scope="col">Player</th>
-                    <th scope="col">Score</th>
-                    <th scope="col" className="voiceHeaderCell">
-                      Voice
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roomState.room.players.map((player) => {
-                    const isSpeaking = player.id === speakingPlayerId
-
-                    return (
-                      <tr
-                        key={player.id}
-                        className={player.id === roomState.currentTurnPlayerId ? 'highlightedPlayerRow' : ''}
-                        onContextMenu={(event) => openVolumeMenu(event, player.id, player.name)}
-                      >
-                        <td>
-                          {player.name}
-                          {player.id === playerId ? ' (You)' : ''}
-                        </td>
-                        <td>{player.score}</td>
-                        <td className="voiceCell">
-                          <span
-                            className={`voiceIndicator ${isSpeaking ? 'voiceIndicatorActive' : ''}`}
-                            title={isSpeaking ? `${player.name} is speaking` : `${player.name} is muted`}
-                            aria-label={isSpeaking ? `${player.name} is speaking` : `${player.name} is muted`}
-                          />
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="gameColumn futureColumn wordColumn">
-              <h2 className="sectionTitle">Word Card</h2>
-              <div className="wordCard">
-                {gameStartsIn > 0 ? (
-                  <p className="wordHint">Get ready...</p>
-                ) : isActivePlayer ? (
-                  <p className="wordValue">{activeWord ?? 'Loading word...'}</p>
-                ) : (
-                  <p className="wordHint">
-                    {activePlayer
-                      ? `${activePlayer.name} is explaining now. Guess the word in chat.`
-                      : 'Waiting for active player.'}
-                  </p>
-                )}
-              </div>
-
-              {isActivePlayer && gameStartsIn === 0 ? (
-                <button type="button" className="skipButton" onClick={skipWord}>
-                  Skip Word
-                </button>
-              ) : null}
-            </div>
-
-            <div className="gameColumn chatSection">
-              <h2 className="sectionTitle">Chat</h2>
-              <ul className="chatList" ref={chatListRef}>
-                {chatMessages.map((message) => (
-                  <li
-                    key={message.id}
-                    className={`chatItem ${message.playerId === playerId ? 'ownMessage' : ''}`}
-                  >
-                    <p className="chatMeta">
-                      {message.playerName}
-                      {message.playerId === playerId ? ' (You)' : ''}
-                    </p>
-                    <p className="chatText">{message.text}</p>
-                  </li>
-                ))}
-              </ul>
-
-              <form
-                className="chatComposer"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  void sendChatMessage()
-                }}
-              >
-                <input
-                  className="input"
-                  value={chatInput}
-                  onChange={(event) => setChatInput(event.target.value)}
-                  placeholder="Type your guess"
-                />
-                <button type="submit" className="playButton">
-                  Send
-                </button>
-              </form>
-
-              {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
-            </div>
-          </div>
-
-          {volumeMenu ? (
-            <div
-              ref={volumeMenuRef}
-              className="volumeContextMenu"
-              style={{ left: volumeMenu.x, top: volumeMenu.y }}
-            >
-              <p className="volumeMenuTitle">Volume: {volumeMenu.playerName}</p>
-              <input
-                className="volumeSlider"
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={Math.round(getPlayerVolume(volumeMenu.playerId) * 100)}
-                onChange={(event) => {
-                  updatePlayerVolume(volumeMenu.playerId, Number(event.target.value) / 100)
-                }}
-                disabled={volumeMenu.playerId === playerId}
-              />
-              <p className="volumeMenuValue">
-                {volumeMenu.playerId === playerId
-                  ? 'Your own mic volume is controlled by system input settings.'
-                  : `${Math.round(getPlayerVolume(volumeMenu.playerId) * 100)}%`}
-              </p>
-            </div>
-          ) : null}
-        </section>
-      </main>
+      <GameScreen
+        roomState={roomState}
+        playerId={playerId}
+        chatInput={chatInput}
+        chatMessages={chatMessages}
+        statusMessage={statusMessage}
+        gameStartsIn={gameStartsIn}
+        activeWord={activeWord}
+        volumeMenu={volumeMenu}
+        chatListRef={chatListRef}
+        volumeMenuRef={volumeMenuRef}
+        getPlayerVolume={getPlayerVolume}
+        onChatInputChange={setChatInput}
+        onSendChatMessage={() => {
+          void sendChatMessage()
+        }}
+        onSkipWord={() => {
+          void skipWord()
+        }}
+        onOpenVolumeMenu={openVolumeMenu}
+        onUpdatePlayerVolume={updatePlayerVolume}
+      />
     )
   }
 
   if (roomState) {
-    const connectedPlayerIds = new Set(roomState.connectedPlayerIds ?? [])
-    const disconnectedPlayers = roomState.room.players.filter(
-      (player) => !connectedPlayerIds.has(player.id),
-    )
-
     return (
-      <main className="screen">
-        <section className="panel roomPanel">
-          <h1 className="title">Room {roomState.roomId}</h1>
-          <p className="hintText">Share this code: {roomState.roomId}</p>
-          <p className="hintText">
-            Room URL: {window.location.origin}
-            {ROOM_PATH_PREFIX}
-            {roomState.roomId}
-          </p>
-
-          <div className="timerRow">
-            <label htmlFor="timer" className="label">
-              Timer: {roomState.room.settings.timer}s
-            </label>
-            <input
-              id="timer"
-              type="range"
-              min={10}
-              max={300}
-              step={5}
-              value={roomState.room.settings.timer}
-              disabled={!isHost}
-              onChange={(event) => updateTimer(Number(event.target.value))}
-            />
-          </div>
-
-          <div>
-            <h2 className="sectionTitle">Players</h2>
-            <ul className="playerList">
-              {roomState.room.players.map((player) => (
-                <li key={player.id} className="playerItem">
-                  <span>
-                    {player.name}
-                    {player.id === playerId ? ' (You)' : ''}
-                  </span>
-                  <strong>{connectedPlayerIds.has(player.id) ? 'Online' : 'Offline'}</strong>
-                  {player.id === roomState.room.hostId ? <strong>Host</strong> : null}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {isHost ? (
-            <button
-              type="button"
-              className="playButton"
-              onClick={startGame}
-              disabled={!canStartGame || Boolean(roomState.startRequested)}
-            >
-              {roomState.startRequested ? 'Waiting for players...' : 'Start'}
-            </button>
-          ) : (
-            <p className="hintText">
-              {roomState.startRequested
-                ? 'Host started the game. Waiting for everyone to reconnect.'
-                : 'Waiting for host to start the game.'}
-            </p>
-          )}
-
-          {isHost && !canStartGame ? (
-            <p className="hintText">At least 2 players are required to start.</p>
-          ) : null}
-
-          {roomState.startRequested && disconnectedPlayers.length > 0 ? (
-            <p className="hintText">
-              Waiting for: {disconnectedPlayers.map((player) => player.name).join(', ')}
-            </p>
-          ) : null}
-
-          {roomState.started ? <p className="startedText">Game started.</p> : null}
-          {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
-        </section>
-      </main>
+      <RoomScreen
+        roomState={roomState}
+        playerId={playerId}
+        isHost={isHost}
+        canStartGame={canStartGame}
+        statusMessage={statusMessage}
+        roomPathPrefix={ROOM_PATH_PREFIX}
+        onUpdateTimer={(nextTimer) => {
+          void updateTimer(nextTimer)
+        }}
+        onStartGame={() => {
+          void startGame()
+        }}
+      />
     )
   }
 
   return (
-    <main className="screen">
-      <form
-        className="panel"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void joinRoom()
-        }}
-      >
-        <label htmlFor="name" className="label">
-          Name
-        </label>
-        <input
-          id="name"
-          name="name"
-          type="text"
-          className="input"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-        <label htmlFor="roomCode" className="label">
-          Room Code
-        </label>
-        <input
-          id="roomCode"
-          name="roomCode"
-          type="text"
-          className="input"
-          value={roomCode}
-          onChange={(event) => setRoomCode(event.target.value)}
-        />
-        <div className="actions">
-          <button type="submit" className="playButton">
-            Play
-          </button>
-          <button type="button" className="createRoomButton" onClick={createRoom}>
-            Create Room
-          </button>
-        </div>
-        {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
-      </form>
-    </main>
+    <JoinScreen
+      name={name}
+      roomCode={roomCode}
+      statusMessage={statusMessage}
+      onNameChange={setName}
+      onRoomCodeChange={setRoomCode}
+      onJoin={() => {
+        void joinRoom()
+      }}
+      onCreateRoom={() => {
+        void createRoom()
+      }}
+    />
   )
 }
 
