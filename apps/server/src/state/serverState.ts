@@ -6,6 +6,7 @@ export const roomSockets = new Map<string, Set<WebSocket>>();
 export const socketRooms = new WeakMap<WebSocket, string>();
 export const socketPlayers = new WeakMap<WebSocket, string>();
 export const roomTickIntervals = new Map<string, NodeJS.Timeout>();
+export const userRooms = new Map<string, { roomId: string; playerId: string }>();
 
 export const GAME_START_DELAY_MS = 3000;
 

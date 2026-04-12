@@ -14,3 +14,4 @@ apps/server/src/generated/prisma/
 # Source maps
 *.js.map
 apps/server/dist/index.js.map
+apps/server/dist/index.js.map

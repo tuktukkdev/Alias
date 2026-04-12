@@ -1,4 +1,4 @@
-import { GAME_START_DELAY_MS, WORD_POOL, roomTickIntervals, rooms } from "../state/serverState";
+import { GAME_START_DELAY_MS, WORD_POOL, roomSockets, roomTickIntervals, rooms } from "../state/serverState";
 import { RoomBroadcasters, RoomRecord, RoomStateBroadcastEvent } from "../types/game";
 
 export const buildRoomStatePayload = (
@@ -128,6 +128,41 @@ export const resolveCurrentWord = (
 
   broadcasters.broadcastRoomState(roomId, record);
   broadcasters.broadcastActiveWord(roomId, record);
+};
+
+export const removePlayerPermanently = (
+  roomId: string,
+  playerId: string,
+  broadcasters: RoomBroadcasters,
+): void => {
+  const record = rooms.get(roomId);
+  if (!record) {
+    return;
+  }
+
+  record.room.players = record.room.players.filter((p) => p.id !== playerId);
+  record.connectedPlayerIds.delete(playerId);
+
+  if (record.started && record.currentTurnPlayerId === playerId && record.room.players.length > 0) {
+    record.currentTurnPlayerId = getNextTurnPlayerId(record);
+    record.currentWord = getRandomWord();
+    record.waitingForWordResolutionAtZero = false;
+    record.turnSecondsRemaining = record.room.settings.timer;
+    broadcasters.broadcastActiveWord(roomId, record);
+  }
+
+  if (record.room.hostId === playerId && record.room.players.length > 0) {
+    record.room.hostId = record.room.players[0].id;
+  }
+
+  if (record.room.players.length === 0) {
+    clearRoomTickInterval(roomId);
+    rooms.delete(roomId);
+    roomSockets.delete(roomId);
+    return;
+  }
+
+  broadcasters.broadcastRoomState(roomId, record);
 };
 
 export const startRoomGame = (

@@ -17,6 +17,7 @@ interface GameScreenProps {
   onSkipWord: () => void
   onOpenVolumeMenu: (event: React.MouseEvent, playerId: string, playerName: string) => void
   onUpdatePlayerVolume: (playerId: string, volume: number) => void
+  onExitRoom: () => void
 }
 
 const getTurnTimerText = (
@@ -67,6 +68,7 @@ export function GameScreen({
   onSkipWord,
   onOpenVolumeMenu,
   onUpdatePlayerVolume,
+  onExitRoom,
 }: GameScreenProps) {
   const activePlayer = roomState.room.players.find((player) => player.id === roomState.currentTurnPlayerId)
   const turnSecondsLeft = roomState.turnSecondsRemaining ?? roomState.room.settings.timer
@@ -211,6 +213,10 @@ export function GameScreen({
             </p>
           </div>
         ) : null}
+
+        <button type="button" className="exitButton" onClick={onExitRoom}>
+          Exit Game
+        </button>
       </section>
     </main>
   )

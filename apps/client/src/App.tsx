@@ -16,8 +16,10 @@ import type { AuthUser } from './types/auth'
 import { clearStoredAuthUser, getStoredAuthUser, setStoredAuthUser } from './utils/authSession'
 import {
   createRoomRequest,
+  exitRoomRequest,
   fetchRoomChatRequest,
   fetchRoomStateRequest,
+  findMyRoomRequest,
   joinRoomRequest,
   mapRoomState,
   parseChatListResponse,
@@ -352,7 +354,7 @@ function App() {
     }
 
     setStatusMessage(options?.isAutoReconnect ? 'Reconnecting to room...' : 'Joining room...')
-    const response = await joinRoomRequest(trimmedRoomCode, trimmedName, existingPlayerId)
+    const response = await joinRoomRequest(trimmedRoomCode, trimmedName, existingPlayerId, authUser?.id)
 
     if (response.status === 404) {
       setStatusMessage('Room not found. Check the room code and try again.')
@@ -367,6 +369,11 @@ function App() {
       if (options?.isAutoReconnect) {
         clearStoredRoomSession()
       }
+      return
+    }
+
+    if (response.status === 409) {
+      setStatusMessage('You are already in a room. Exit it first.')
       return
     }
 
@@ -412,14 +419,11 @@ function App() {
     }
 
     const roomCodeFromPath = getRoomCodeFromPath(window.location.pathname)
-    if (!roomCodeFromPath) {
-      return
-    }
 
     const session = getStoredRoomSession()
-    if (session && session.roomId === roomCodeFromPath) {
+    if (session && (!roomCodeFromPath || session.roomId === roomCodeFromPath)) {
       setName(session.name)
-      setRoomCode(roomCodeFromPath)
+      setRoomCode(session.roomId)
       void joinRoom({
         playerName: session.name,
         targetRoomCode: session.roomId,
@@ -429,13 +433,35 @@ function App() {
       return
     }
 
-    setRoomCode(roomCodeFromPath)
+    if (roomCodeFromPath) {
+      setRoomCode(roomCodeFromPath)
 
-    if (authUser) {
-      void joinRoom({
-        playerName: authUser.name,
-        targetRoomCode: roomCodeFromPath,
-      })
+      if (authUser) {
+        void joinRoom({
+          playerName: authUser.name,
+          targetRoomCode: roomCodeFromPath,
+        })
+      }
+      return
+    }
+
+    if (authUser && !roomCodeFromPath) {
+      void (async () => {
+        try {
+          const response = await findMyRoomRequest(authUser.id)
+          if (response.ok) {
+            const data = (await response.json()) as { roomId: string; playerId: string }
+            void joinRoom({
+              playerName: authUser.name,
+              targetRoomCode: data.roomId,
+              existingPlayerId: data.playerId,
+              isAutoReconnect: true,
+            })
+          }
+        } catch {
+          // Non-critical: proceed without rejoin.
+        }
+      })()
     }
   }, [roomState, authUser])
 
@@ -762,7 +788,12 @@ function App() {
     }
 
     setStatusMessage('Creating room...')
-    const response = await createRoomRequest(trimmedName)
+    const response = await createRoomRequest(trimmedName, authUser?.id)
+
+    if (response.status === 409) {
+      setStatusMessage('You are already in a room. Exit it first.')
+      return
+    }
 
     if (!response.ok) {
       setStatusMessage('Failed to create room. Is the server running on port 3000?')
@@ -875,6 +906,28 @@ function App() {
     setStatusMessage('Word skipped.')
   }
 
+  const handleExitRoom = async () => {
+    if (!roomState || !playerId) {
+      return
+    }
+
+    const currentRoomId = roomState.roomId
+    const currentPlayerId = playerId
+
+    setRoomState(null)
+    setPlayerId(null)
+    setActiveWord(null)
+    setChatMessages([])
+    clearStoredRoomSession()
+    window.history.replaceState(null, '', '/')
+
+    try {
+      await exitRoomRequest(currentRoomId, currentPlayerId, authUser?.id)
+    } catch {
+      // Ignore network errors on exit — local state is already cleared.
+    }
+  }
+
   const handleLogin = async (username: string, password: string) => {
     setAuthLoading(true)
     setAuthError('')
@@ -891,6 +944,21 @@ function App() {
       setAuthUser(user)
       setAuthModal(null)
       setAuthError('')
+
+      try {
+        const roomResponse = await findMyRoomRequest(String(data.id))
+        if (roomResponse.ok) {
+          const roomData = (await roomResponse.json()) as { roomId: string; playerId: string }
+          void joinRoom({
+            playerName: data.username,
+            targetRoomCode: roomData.roomId,
+            existingPlayerId: roomData.playerId,
+            isAutoReconnect: true,
+          })
+        }
+      } catch {
+        // Non-critical: proceed without rejoin on network error.
+      }
     } catch {
       setAuthError('Could not reach the server. Is it running?')
     } finally {
@@ -914,6 +982,21 @@ function App() {
       setAuthUser(user)
       setAuthModal(null)
       setAuthError('')
+
+      try {
+        const roomResponse = await findMyRoomRequest(String(data.id))
+        if (roomResponse.ok) {
+          const roomData = (await roomResponse.json()) as { roomId: string; playerId: string }
+          void joinRoom({
+            playerName: data.username,
+            targetRoomCode: roomData.roomId,
+            existingPlayerId: roomData.playerId,
+            isAutoReconnect: true,
+          })
+        }
+      } catch {
+        // Non-critical: proceed without rejoin on network error.
+      }
     } catch {
       setAuthError('Could not reach the server. Is it running?')
     } finally {
@@ -923,7 +1006,13 @@ function App() {
 
   const handleLogout = () => {
     clearStoredAuthUser()
+    clearStoredRoomSession()
     setAuthUser(null)
+    setRoomState(null)
+    setPlayerId(null)
+    setActiveWord(null)
+    setChatMessages([])
+    window.history.replaceState(null, '', '/')
   }
 
   const handleNavigate = (_page: 'profile' | 'friends' | 'stats' | 'collections') => {
@@ -952,6 +1041,9 @@ function App() {
       }}
       onOpenVolumeMenu={openVolumeMenu}
       onUpdatePlayerVolume={updatePlayerVolume}
+      onExitRoom={() => {
+        void handleExitRoom()
+      }}
     />
   ) : roomState ? (
     <RoomScreen
@@ -966,6 +1058,9 @@ function App() {
       }}
       onStartGame={() => {
         void startGame()
+      }}
+      onExitRoom={() => {
+        void handleExitRoom()
       }}
     />
   ) : (

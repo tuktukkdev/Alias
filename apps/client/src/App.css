@@ -460,6 +460,28 @@
   outline-offset: 2px;
 }
 
+.exitButton {
+  margin-top: 0.75rem;
+  border: 1px solid #6e3030;
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+  background: transparent;
+  color: #f87171;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.exitButton:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.exitButton:focus-visible {
+  outline: 2px solid #f87171;
+  outline-offset: 2px;
+}
+
 .chatSection {
   display: grid;
   gap: 0.6rem;

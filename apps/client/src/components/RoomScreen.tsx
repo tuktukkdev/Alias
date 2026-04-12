@@ -9,6 +9,7 @@ interface RoomScreenProps {
   roomPathPrefix: string
   onUpdateTimer: (timer: number) => void
   onStartGame: () => void
+  onExitRoom: () => void
 }
 
 export function RoomScreen({
@@ -20,6 +21,7 @@ export function RoomScreen({
   roomPathPrefix,
   onUpdateTimer,
   onStartGame,
+  onExitRoom,
 }: RoomScreenProps) {
   const connectedPlayerIds = new Set(roomState.connectedPlayerIds ?? [])
   const disconnectedPlayers = roomState.room.players.filter(
@@ -98,6 +100,10 @@ export function RoomScreen({
 
         {roomState.started ? <p className="startedText">Game started.</p> : null}
         {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
+
+        <button type="button" className="exitButton" onClick={onExitRoom}>
+          Exit Room
+        </button>
       </section>
     </main>
   )

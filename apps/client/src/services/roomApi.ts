@@ -15,21 +15,22 @@ export const mapRoomState = (data: RoomState): RoomState => ({
   waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
 })
 
-export const createRoomRequest = async (name: string): Promise<Response> => {
+export const createRoomRequest = async (name: string, userId?: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms`, {
     method: 'POST',
     headers: JSON_HEADERS,
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, userId }),
   })
 }
 
-export const joinRoomRequest = async (roomId: string, name: string, playerId?: string): Promise<Response> => {
+export const joinRoomRequest = async (roomId: string, name: string, playerId?: string, userId?: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}/join`, {
     method: 'POST',
     headers: JSON_HEADERS,
     body: JSON.stringify({
       name,
       playerId,
+      userId,
     }),
   })
 }
@@ -76,6 +77,18 @@ export const skipWordRequest = async (roomId: string, playerId: string): Promise
     headers: JSON_HEADERS,
     body: JSON.stringify({ playerId }),
   })
+}
+
+export const exitRoomRequest = async (roomId: string, playerId: string, userId?: string): Promise<Response> => {
+  return fetch(`${API_BASE}/rooms/${roomId}/players/${playerId}`, {
+    method: 'DELETE',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ userId }),
+  })
+}
+
+export const findMyRoomRequest = async (userId: string): Promise<Response> => {
+  return fetch(`${API_BASE}/players/${userId}/room`)
 }
 
 export const parseRoomJoinResponse = async (response: Response): Promise<RoomJoinResponse> => {

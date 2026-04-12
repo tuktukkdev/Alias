@@ -75,3 +75,16 @@ export const broadcastActiveWord = (roomId: string, record: RoomRecord): void =>
     );
   }
 };
+
+export const closePlayerSockets = (roomId: string, playerId: string): void => {
+  const sockets = roomSockets.get(roomId);
+  if (!sockets) {
+    return;
+  }
+
+  for (const socket of sockets) {
+    if (socketPlayers.get(socket) === playerId) {
+      socket.close(4001, "player exited");
+    }
+  }
+};

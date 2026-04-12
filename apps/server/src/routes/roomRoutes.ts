@@ -1,9 +1,10 @@
 import { Express, Request, Response } from "express";
-import { broadcastActiveWord, broadcastRoomState, broadcastToRoom } from "../ws/broadcast";
-import { rooms } from "../state/serverState";
+import { broadcastActiveWord, broadcastRoomState, broadcastToRoom, closePlayerSockets } from "../ws/broadcast";
+import { rooms, userRooms } from "../state/serverState";
 import {
   allPlayersConnected,
   buildRoomStatePayload,
+  removePlayerPermanently,
   resolveCurrentWord,
   startRoomGame,
 } from "../services/roomService";
@@ -24,9 +25,24 @@ export const registerRoomRoutes = (app: Express): void => {
     const name = String(req.body?.name ?? "").trim();
     const timer = Number(req.body?.timer ?? 60);
     const winScore = Number(req.body?.winScore ?? 10);
+    const userId = String(req.body?.userId ?? "").trim() || null;
 
     if (!name) {
       return res.status(400).json({ error: "name is required" });
+    }
+
+    if (userId) {
+      const existing = userRooms.get(userId);
+      if (existing) {
+        if (rooms.has(existing.roomId)) {
+          return res.status(409).json({
+            error: "already_in_room",
+            roomId: existing.roomId,
+            playerId: existing.playerId,
+          });
+        }
+        userRooms.delete(userId);
+      }
     }
 
     const player: Player = {
@@ -58,6 +74,10 @@ export const registerRoomRoutes = (app: Express): void => {
       waitingForWordResolutionAtZero: false,
     });
 
+    if (userId) {
+      userRooms.set(userId, { roomId, playerId: player.id });
+    }
+
     return res.status(201).json({
       roomId,
       playerId: player.id,
@@ -77,6 +97,7 @@ export const registerRoomRoutes = (app: Express): void => {
     const record = rooms.get(roomId);
     const name = String(req.body?.name ?? "").trim();
     const requestedPlayerId = String(req.body?.playerId ?? "").trim();
+    const userId = String(req.body?.userId ?? "").trim() || null;
 
     if (!record) {
       return res.status(404).json({ error: "room not found" });
@@ -90,6 +111,10 @@ export const registerRoomRoutes = (app: Express): void => {
       if (existingPlayer) {
         if (name) {
           existingPlayer.name = name;
+        }
+
+        if (userId) {
+          userRooms.set(userId, { roomId, playerId: existingPlayer.id });
         }
 
         return res.json({
@@ -113,6 +138,20 @@ export const registerRoomRoutes = (app: Express): void => {
       return res.status(400).json({ error: "name is required" });
     }
 
+    if (userId) {
+      const existing = userRooms.get(userId);
+      if (existing) {
+        if (rooms.has(existing.roomId)) {
+          return res.status(409).json({
+            error: "already_in_room",
+            roomId: existing.roomId,
+            playerId: existing.playerId,
+          });
+        }
+        userRooms.delete(userId);
+      }
+    }
+
     const player: Player = {
       id: createId("player"),
       name,
@@ -120,6 +159,11 @@ export const registerRoomRoutes = (app: Express): void => {
     };
 
     record.room.players.push(player);
+
+    if (userId) {
+      userRooms.set(userId, { roomId, playerId: player.id });
+    }
+
     broadcastRoomState(roomId, record);
     return res.status(201).json({
       playerId: player.id,
@@ -320,5 +364,45 @@ export const registerRoomRoutes = (app: Express): void => {
     resolveCurrentWord(roomId, record, broadcasters);
 
     return res.status(200).json(buildRoomStatePayload(roomId, record));
+  });
+
+  app.delete("/rooms/:roomId/players/:playerId", (req: Request, res: Response) => {
+    const roomId = getRouteParam(req.params.roomId);
+    const playerId = getRouteParam(req.params.playerId);
+    const userId = String(req.body?.userId ?? "").trim() || null;
+
+    const record = rooms.get(roomId);
+    if (!record) {
+      return res.status(404).json({ error: "room not found" });
+    }
+
+    const player = record.room.players.find((p) => p.id === playerId);
+    if (!player) {
+      return res.status(404).json({ error: "player not found in room" });
+    }
+
+    if (userId) {
+      userRooms.delete(userId);
+    }
+
+    closePlayerSockets(roomId, playerId);
+    removePlayerPermanently(roomId, playerId, broadcasters);
+
+    return res.status(200).json({ ok: true });
+  });
+
+  app.get("/players/:userId/room", (req: Request, res: Response) => {
+    const userId = getRouteParam(req.params.userId);
+    const entry = userRooms.get(userId);
+    if (!entry) {
+      return res.status(404).json({ error: "not in a room" });
+    }
+
+    if (!rooms.has(entry.roomId)) {
+      userRooms.delete(userId);
+      return res.status(404).json({ error: "not in a room" });
+    }
+
+    return res.json({ roomId: entry.roomId, playerId: entry.playerId });
   });
 };
