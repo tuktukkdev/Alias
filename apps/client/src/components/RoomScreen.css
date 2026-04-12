@@ -36,3 +36,20 @@
   color: #8de3b4;
   font-weight: 700;
 }
+
+.collectionsPickerBtn {
+  padding: 0.55rem 1rem;
+  border: 2px solid #4f8cff;
+  border-radius: 8px;
+  background: transparent;
+  color: #4f8cff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.collectionsPickerBtn:hover {
+  background: #4f8cff;
+  color: #fff;
+}

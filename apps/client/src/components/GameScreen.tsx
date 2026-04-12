@@ -219,6 +219,18 @@ export function GameScreen({
           Exit Game
         </button>
       </section>
+
+      {roomState.winner && (
+        <div className="winnerOverlay">
+          <div className="winnerPanel">
+            <h2 className="winnerTitle">Game Over!</h2>
+            <p className="winnerName">🏆 {roomState.winner.playerName} wins!</p>
+            <button type="button" className="mainMenuButton" onClick={onExitRoom}>
+              Main Menu
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

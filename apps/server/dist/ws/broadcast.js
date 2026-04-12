@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.broadcastActiveWord = exports.broadcastRoomState = exports.broadcastToRoom = exports.removeSocketFromRoom = exports.addSocketToRoom = void 0;
+exports.closePlayerSockets = exports.broadcastActiveWord = exports.broadcastRoomState = exports.broadcastToRoom = exports.removeSocketFromRoom = exports.addSocketToRoom = void 0;
 const ws_1 = require("ws");
 const serverState_1 = require("../state/serverState");
 const roomService_1 = require("../services/roomService");
@@ -67,4 +67,16 @@ const broadcastActiveWord = (roomId, record) => {
     }
 };
 exports.broadcastActiveWord = broadcastActiveWord;
+const closePlayerSockets = (roomId, playerId) => {
+    const sockets = serverState_1.roomSockets.get(roomId);
+    if (!sockets) {
+        return;
+    }
+    for (const socket of sockets) {
+        if (serverState_1.socketPlayers.get(socket) === playerId) {
+            socket.close(4001, "player exited");
+        }
+    }
+};
+exports.closePlayerSockets = closePlayerSockets;
 //# sourceMappingURL=broadcast.js.map

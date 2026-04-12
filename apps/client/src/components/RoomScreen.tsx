@@ -9,6 +9,9 @@ interface RoomScreenProps {
   statusMessage: string
   roomPathPrefix: string
   onUpdateTimer: (timer: number) => void
+  onUpdateDifficulty: (difficulty: number) => void
+  onUpdateWinScore: (winScore: number) => void
+  onOpenCollectionPicker: () => void
   onStartGame: () => void
   onExitRoom: () => void
 }
@@ -21,6 +24,9 @@ export function RoomScreen({
   statusMessage,
   roomPathPrefix,
   onUpdateTimer,
+  onUpdateDifficulty,
+  onUpdateWinScore,
+  onOpenCollectionPicker,
   onStartGame,
   onExitRoom,
 }: RoomScreenProps) {
@@ -55,6 +61,46 @@ export function RoomScreen({
             onChange={(event) => onUpdateTimer(Number(event.target.value))}
           />
         </div>
+
+        <div className="timerRow">
+          <label htmlFor="difficulty" className="label">
+            Difficulty: {roomState.room.settings.difficulty}
+          </label>
+          <input
+            id="difficulty"
+            type="range"
+            min={1}
+            max={3}
+            step={1}
+            value={roomState.room.settings.difficulty}
+            disabled={!isHost}
+            onChange={(event) => onUpdateDifficulty(Number(event.target.value))}
+          />
+        </div>
+
+        <div className="timerRow">
+          <label htmlFor="winScore" className="label">
+            Win Score: {roomState.room.settings.winScore ?? 50}
+          </label>
+          <input
+            id="winScore"
+            type="range"
+            min={20}
+            max={200}
+            step={5}
+            value={roomState.room.settings.winScore ?? 50}
+            disabled={!isHost}
+            onChange={(event) => onUpdateWinScore(Number(event.target.value))}
+          />
+        </div>
+
+        {isHost && (
+          <button type="button" className="collectionsPickerBtn" onClick={onOpenCollectionPicker}>
+            Choose Collections
+            {(roomState.room.settings.selectedCollections?.length ?? 0) > 0 &&
+              ` (${roomState.room.settings.selectedCollections?.length ?? 0})`}
+          </button>
+        )}
 
         <div>
           <h2 className="sectionTitle">Players</h2>

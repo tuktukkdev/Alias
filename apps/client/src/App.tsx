@@ -4,6 +4,7 @@ import './styles/common.css'
 import { ROOM_PATH_PREFIX } from './config/client'
 import { AuthModal } from './components/AuthModal'
 import CollectionsScreen from './components/CollectionsScreen'
+import { CollectionPickerModal } from './components/CollectionPickerModal'
 import { FriendsScreen } from './components/FriendsScreen'
 import { GameScreen } from './components/GameScreen'
 import { Header } from './components/Header'
@@ -28,10 +29,12 @@ import {
   sendChatMessageRequest,
   skipWordRequest,
   startGameRequest,
+  updateCollectionsRequest,
+  updateSettingsRequest,
   updateTimerRequest,
 } from './services/roomApi'
 import type { AuthUser } from './types/auth'
-import type { ChatMessage, RoomState, WsPayload } from './types/game'
+import type { ChatMessage, RoomState, SelectedCollection, WsPayload } from './types/game'
 import { getStoredAuthUser } from './utils/authSession'
 import { getRoomCodeFromPath, pushRoomPath } from './utils/roomPath'
 import {
@@ -56,6 +59,7 @@ function App() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [gameStartsIn, setGameStartsIn] = useState(0)
   const [activeWord, setActiveWord] = useState<string | null>(null)
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false)
 
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
@@ -192,6 +196,36 @@ function App() {
     })
     const response = await updateTimerRequest(roomState.roomId, playerId, nextTimer)
     if (!response.ok) { setStatusMessage('Failed to update timer setting.'); return }
+    setRoomState(mapRoomState(await parseRoomStateResponse(response)))
+  }
+
+  const updateDifficulty = async (nextDifficulty: number) => {
+    if (!roomState || !playerId || !isHost) return
+    setRoomState({
+      ...roomState,
+      room: { ...roomState.room, settings: { ...roomState.room.settings, difficulty: nextDifficulty } },
+    })
+    const response = await updateSettingsRequest(roomState.roomId, playerId, { difficulty: nextDifficulty })
+    if (!response.ok) { setStatusMessage('Failed to update difficulty.'); return }
+    setRoomState(mapRoomState(await parseRoomStateResponse(response)))
+  }
+
+  const updateWinScore = async (nextWinScore: number) => {
+    if (!roomState || !playerId || !isHost) return
+    setRoomState({
+      ...roomState,
+      room: { ...roomState.room, settings: { ...roomState.room.settings, winScore: nextWinScore } },
+    })
+    const response = await updateSettingsRequest(roomState.roomId, playerId, { winScore: nextWinScore })
+    if (!response.ok) { setStatusMessage('Failed to update win score.'); return }
+    setRoomState(mapRoomState(await parseRoomStateResponse(response)))
+  }
+
+  const updateCollections = async (collections: SelectedCollection[]) => {
+    if (!roomState || !playerId || !isHost) return
+    setShowCollectionPicker(false)
+    const response = await updateCollectionsRequest(roomState.roomId, playerId, collections)
+    if (!response.ok) { setStatusMessage('Failed to update collections.'); return }
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
@@ -484,6 +518,9 @@ function App() {
         statusMessage={statusMessage}
         roomPathPrefix={ROOM_PATH_PREFIX}
         onUpdateTimer={(t) => void updateTimer(t)}
+        onUpdateDifficulty={(d) => void updateDifficulty(d)}
+        onUpdateWinScore={(w) => void updateWinScore(w)}
+        onOpenCollectionPicker={() => setShowCollectionPicker(true)}
         onStartGame={() => void startGame()}
         onExitRoom={() => void handleExitRoom()}
       />
@@ -514,6 +551,14 @@ function App() {
       {screenContent}
       {showStats && authUser && (
         <StatsModal user={authUser} onClose={() => setShowStats(false)} />
+      )}
+      {showCollectionPicker && roomState && (
+        <CollectionPickerModal
+          userId={authUser ? parseInt(authUser.id, 10) : null}
+          selected={roomState.room.settings.selectedCollections ?? []}
+          onConfirm={(cols) => void updateCollections(cols)}
+          onCancel={() => setShowCollectionPicker(false)}
+        />
       )}
       {authModal && (
         <AuthModal

@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WORD_POOL = exports.GAME_START_DELAY_MS = exports.roomTickIntervals = exports.socketPlayers = exports.socketRooms = exports.roomSockets = exports.rooms = void 0;
+exports.WORD_POOL = exports.GAME_START_DELAY_MS = exports.userRooms = exports.roomTickIntervals = exports.socketPlayers = exports.socketRooms = exports.roomSockets = exports.rooms = void 0;
 exports.rooms = new Map();
 exports.roomSockets = new Map();
 exports.socketRooms = new WeakMap();
 exports.socketPlayers = new WeakMap();
 exports.roomTickIntervals = new Map();
+exports.userRooms = new Map();
 exports.GAME_START_DELAY_MS = 3000;
 exports.WORD_POOL = [
     "самолет",

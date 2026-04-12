@@ -5,6 +5,7 @@ const broadcast_1 = require("../ws/broadcast");
 const serverState_1 = require("../state/serverState");
 const roomService_1 = require("../services/roomService");
 const common_1 = require("../utils/common");
+const wordService_1 = require("../services/wordService");
 const broadcasters = {
     broadcastRoomState: broadcast_1.broadcastRoomState,
     broadcastActiveWord: broadcast_1.broadcastActiveWord,
@@ -16,14 +17,31 @@ const registerRoomRoutes = (app) => {
     app.post("/rooms", (req, res) => {
         const name = String(req.body?.name ?? "").trim();
         const timer = Number(req.body?.timer ?? 60);
-        const winScore = Number(req.body?.winScore ?? 10);
+        const winScore = Number(req.body?.winScore ?? 50);
+        const difficulty = Number(req.body?.difficulty ?? 1);
+        const userId = String(req.body?.userId ?? "").trim() || null;
+        const userIdNum = userId ? parseInt(userId, 10) : NaN;
         if (!name) {
             return res.status(400).json({ error: "name is required" });
+        }
+        if (userId) {
+            const existing = serverState_1.userRooms.get(userId);
+            if (existing) {
+                if (serverState_1.rooms.has(existing.roomId)) {
+                    return res.status(409).json({
+                        error: "already_in_room",
+                        roomId: existing.roomId,
+                        playerId: existing.playerId,
+                    });
+                }
+                serverState_1.userRooms.delete(userId);
+            }
         }
         const player = {
             id: (0, common_1.createId)("player"),
             name,
             score: 0,
+            userId: !isNaN(userIdNum) ? userIdNum : undefined,
         };
         const roomId = (0, common_1.createId)("room");
         const room = {
@@ -31,7 +49,9 @@ const registerRoomRoutes = (app) => {
             hostId: player.id,
             settings: {
                 timer: Number.isFinite(timer) ? Math.max(10, Math.min(300, timer)) : 60,
-                winScore: Number.isFinite(winScore) ? Math.max(1, winScore) : 10,
+                winScore: Number.isFinite(winScore) ? Math.max(20, Math.min(200, winScore)) : 50,
+                difficulty: Number.isFinite(difficulty) ? Math.max(1, Math.min(3, difficulty)) : 1,
+                selectedCollections: [],
             },
         };
         serverState_1.rooms.set(roomId, {
@@ -45,7 +65,14 @@ const registerRoomRoutes = (app) => {
             currentTurnPlayerId: null,
             currentWord: null,
             waitingForWordResolutionAtZero: false,
+            usedWords: new Set(),
+            playerStats: new Map(),
+            gameStartedAt: null,
+            winner: null,
         });
+        if (userId) {
+            serverState_1.userRooms.set(userId, { roomId, playerId: player.id });
+        }
         return res.status(201).json({
             roomId,
             playerId: player.id,
@@ -64,6 +91,7 @@ const registerRoomRoutes = (app) => {
         const record = serverState_1.rooms.get(roomId);
         const name = String(req.body?.name ?? "").trim();
         const requestedPlayerId = String(req.body?.playerId ?? "").trim();
+        const userId = String(req.body?.userId ?? "").trim() || null;
         if (!record) {
             return res.status(404).json({ error: "room not found" });
         }
@@ -72,6 +100,9 @@ const registerRoomRoutes = (app) => {
             if (existingPlayer) {
                 if (name) {
                     existingPlayer.name = name;
+                }
+                if (userId) {
+                    serverState_1.userRooms.set(userId, { roomId, playerId: existingPlayer.id });
                 }
                 return res.json({
                     playerId: existingPlayer.id,
@@ -87,15 +118,35 @@ const registerRoomRoutes = (app) => {
                 .status(403)
                 .json({ error: "game already started; only existing players can reconnect" });
         }
+        if (record.room.players.length >= 10) {
+            return res.status(403).json({ error: "room is full (max 10 players)" });
+        }
         if (!name) {
             return res.status(400).json({ error: "name is required" });
+        }
+        if (userId) {
+            const existing = serverState_1.userRooms.get(userId);
+            if (existing) {
+                if (serverState_1.rooms.has(existing.roomId)) {
+                    return res.status(409).json({
+                        error: "already_in_room",
+                        roomId: existing.roomId,
+                        playerId: existing.playerId,
+                    });
+                }
+                serverState_1.userRooms.delete(userId);
+            }
         }
         const player = {
             id: (0, common_1.createId)("player"),
             name,
             score: 0,
+            userId: userId ? (parseInt(userId, 10) || undefined) : undefined,
         };
         record.room.players.push(player);
+        if (userId) {
+            serverState_1.userRooms.set(userId, { roomId, playerId: player.id });
+        }
         (0, broadcast_1.broadcastRoomState)(roomId, record);
         return res.status(201).json({
             playerId: player.id,
@@ -114,19 +165,35 @@ const registerRoomRoutes = (app) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
         const playerId = String(req.body?.playerId ?? "");
-        const timer = Number(req.body?.timer);
+        const timer = req.body?.timer !== undefined ? Number(req.body.timer) : undefined;
+        const difficulty = req.body?.difficulty !== undefined ? Number(req.body.difficulty) : undefined;
+        const winScore = req.body?.winScore !== undefined ? Number(req.body.winScore) : undefined;
         if (!record) {
             return res.status(404).json({ error: "room not found" });
         }
         if (record.room.hostId !== playerId) {
             return res.status(403).json({ error: "only host can update settings" });
         }
-        if (!Number.isFinite(timer)) {
-            return res.status(400).json({ error: "timer must be a number" });
+        if (timer !== undefined) {
+            if (!Number.isFinite(timer)) {
+                return res.status(400).json({ error: "timer must be a number" });
+            }
+            record.room.settings.timer = Math.max(10, Math.min(300, timer));
+            if (record.turnSecondsRemaining !== null && !record.waitingForWordResolutionAtZero) {
+                record.turnSecondsRemaining = Math.min(record.turnSecondsRemaining, record.room.settings.timer);
+            }
         }
-        record.room.settings.timer = Math.max(10, Math.min(300, timer));
-        if (record.turnSecondsRemaining !== null && !record.waitingForWordResolutionAtZero) {
-            record.turnSecondsRemaining = Math.min(record.turnSecondsRemaining, record.room.settings.timer);
+        if (difficulty !== undefined) {
+            if (!Number.isFinite(difficulty)) {
+                return res.status(400).json({ error: "difficulty must be a number" });
+            }
+            record.room.settings.difficulty = Math.max(1, Math.min(3, difficulty));
+        }
+        if (winScore !== undefined) {
+            if (!Number.isFinite(winScore)) {
+                return res.status(400).json({ error: "winScore must be a number" });
+            }
+            record.room.settings.winScore = Math.max(20, Math.min(200, winScore));
         }
         (0, broadcast_1.broadcastRoomState)(roomId, record);
         return res.json((0, roomService_1.buildRoomStatePayload)(roomId, record));
@@ -210,6 +277,9 @@ const registerRoomRoutes = (app) => {
             const activePlayer = record.room.players.find((roomPlayer) => roomPlayer.id === record.currentTurnPlayerId);
             if (activePlayer) {
                 activePlayer.score += 1;
+                const activeStats = record.playerStats.get(activePlayer.id) ?? { guessed: 0, skipped: 0 };
+                activeStats.guessed++;
+                record.playerStats.set(activePlayer.id, activeStats);
             }
             const solvedMessage = {
                 id: (0, common_1.createId)("msg"),
@@ -241,17 +311,80 @@ const registerRoomRoutes = (app) => {
         if (!activePlayer) {
             return res.status(403).json({ error: "player is not in this room" });
         }
+        activePlayer.score = Math.max(0, activePlayer.score - 1);
+        const skipStats = record.playerStats.get(playerId) ?? { guessed: 0, skipped: 0 };
+        skipStats.skipped++;
+        record.playerStats.set(playerId, skipStats);
         const skippedMessage = {
             id: (0, common_1.createId)("msg"),
             playerId: "system",
             playerName: "System",
-            text: `${activePlayer.name} skipped the word.`,
+            text: `${activePlayer.name} skipped the word. -1 point.`,
             createdAt: new Date().toISOString(),
         };
         record.chatMessages.push(skippedMessage);
         (0, broadcast_1.broadcastToRoom)(roomId, { type: "chat_message", roomId, message: skippedMessage });
         (0, roomService_1.resolveCurrentWord)(roomId, record, broadcasters);
         return res.status(200).json((0, roomService_1.buildRoomStatePayload)(roomId, record));
+    });
+    app.delete("/rooms/:roomId/players/:playerId", (req, res) => {
+        const roomId = (0, common_1.getRouteParam)(req.params.roomId);
+        const playerId = (0, common_1.getRouteParam)(req.params.playerId);
+        const userId = String(req.body?.userId ?? "").trim() || null;
+        const record = serverState_1.rooms.get(roomId);
+        if (!record) {
+            return res.status(404).json({ error: "room not found" });
+        }
+        const player = record.room.players.find((p) => p.id === playerId);
+        if (!player) {
+            return res.status(404).json({ error: "player not found in room" });
+        }
+        if (userId) {
+            serverState_1.userRooms.delete(userId);
+        }
+        (0, broadcast_1.closePlayerSockets)(roomId, playerId);
+        (0, roomService_1.removePlayerPermanently)(roomId, playerId, broadcasters);
+        return res.status(200).json({ ok: true });
+    });
+    app.put("/rooms/:roomId/collections", async (req, res) => {
+        const roomId = (0, common_1.getRouteParam)(req.params.roomId);
+        const record = serverState_1.rooms.get(roomId);
+        const playerId = String(req.body?.playerId ?? "");
+        const collections = req.body?.collections;
+        if (!record) {
+            return res.status(404).json({ error: "room not found" });
+        }
+        if (record.room.hostId !== playerId) {
+            return res.status(403).json({ error: "only host can update collections" });
+        }
+        if (!Array.isArray(collections)) {
+            return res.status(400).json({ error: "collections must be an array" });
+        }
+        const parsed = collections
+            .filter((c) => typeof c === "object" &&
+            c !== null &&
+            typeof c.id === "number" &&
+            (c.type === "default" || c.type === "custom"))
+            .map((c) => ({ id: c.id, type: c.type }));
+        record.room.settings.selectedCollections = parsed;
+        const totalWords = await (0, wordService_1.countCollectionWords)(parsed);
+        (0, broadcast_1.broadcastRoomState)(roomId, record);
+        return res.json({
+            ...(0, roomService_1.buildRoomStatePayload)(roomId, record),
+            totalCollectionWords: totalWords,
+        });
+    });
+    app.get("/players/:userId/room", (req, res) => {
+        const userId = (0, common_1.getRouteParam)(req.params.userId);
+        const entry = serverState_1.userRooms.get(userId);
+        if (!entry) {
+            return res.status(404).json({ error: "not in a room" });
+        }
+        if (!serverState_1.rooms.has(entry.roomId)) {
+            serverState_1.userRooms.delete(userId);
+            return res.status(404).json({ error: "not in a room" });
+        }
+        return res.json({ roomId: entry.roomId, playerId: entry.playerId });
     });
 };
 exports.registerRoomRoutes = registerRoomRoutes;

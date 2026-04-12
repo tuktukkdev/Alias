@@ -1,5 +1,5 @@
 import { API_BASE } from '../config/client'
-import type { ChatMessage, RoomJoinResponse, RoomState } from '../types/game'
+import type { ChatMessage, RoomJoinResponse, RoomState, SelectedCollection } from '../types/game'
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
@@ -13,6 +13,7 @@ export const mapRoomState = (data: RoomState): RoomState => ({
   turnSecondsRemaining: data.turnSecondsRemaining,
   currentTurnPlayerId: data.currentTurnPlayerId,
   waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
+  winner: data.winner,
 })
 
 export const createRoomRequest = async (name: string, userId?: string): Promise<Response> => {
@@ -49,6 +50,34 @@ export const updateTimerRequest = async (roomId: string, playerId: string, timer
     headers: JSON_HEADERS,
     body: JSON.stringify({ playerId, timer }),
   })
+}
+
+export const updateSettingsRequest = async (
+  roomId: string,
+  playerId: string,
+  settings: { timer?: number; difficulty?: number; winScore?: number },
+): Promise<Response> => {
+  return fetch(`${API_BASE}/rooms/${roomId}/settings`, {
+    method: 'PATCH',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ playerId, ...settings }),
+  })
+}
+
+export const updateCollectionsRequest = async (
+  roomId: string,
+  playerId: string,
+  collections: SelectedCollection[],
+): Promise<Response> => {
+  return fetch(`${API_BASE}/rooms/${roomId}/collections`, {
+    method: 'PUT',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ playerId, collections }),
+  })
+}
+
+export const fetchDefaultCollectionsRequest = async (): Promise<Response> => {
+  return fetch(`${API_BASE}/default-collections`)
 }
 
 export const startGameRequest = async (roomId: string, playerId: string): Promise<Response> => {

@@ -231,6 +231,58 @@
   gap: 0.6rem;
 }
 
+/* ── Winner Overlay ──────────────────────────────────────── */
+
+.winnerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.winnerPanel {
+  background: #0d1d2e;
+  border: 2px solid #4a90d9;
+  border-radius: 16px;
+  padding: 2.5rem 3rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.winnerTitle {
+  margin: 0;
+  font-size: 2rem;
+  color: #eaf2ff;
+}
+
+.winnerName {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #ffd700;
+  font-weight: 700;
+}
+
+.mainMenuButton {
+  padding: 0.75rem 2rem;
+  background: #4a90d9;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mainMenuButton:hover {
+  background: #357abd;
+}
+
 /* ── Volume Menu ─────────────────────────────────────────── */
 
 .volumeContextMenu {

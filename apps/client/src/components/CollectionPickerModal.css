@@ -1,0 +1,158 @@
+/* ── Collection Picker Modal ──────────────────────────────── */
+
+.pickerOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.pickerPanel {
+  background: #101c2e;
+  border-radius: 14px;
+  padding: 1.5rem;
+  width: min(500px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: #e9f2ff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.pickerTitle {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.pickerSearch {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #2d4a6a;
+  background: #0d1827;
+  color: #e9f2ff;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.pickerSearch:focus {
+  border-color: #4f8cff;
+}
+
+.pickerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pickerSectionTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #88b4e7;
+  font-weight: 600;
+}
+
+.pickerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.pickerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: #19273a;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pickerItem:hover {
+  background: #1e3050;
+}
+
+.pickerItem input[type='checkbox'] {
+  accent-color: #4f8cff;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.pickerItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.pickerItemName {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pickerItemMeta {
+  font-size: 0.8rem;
+  color: #7da8d4;
+}
+
+.pickerWarning {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #3a2a10;
+  color: #ffd666;
+  font-size: 0.85rem;
+}
+
+.pickerActions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.pickerBtn {
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.pickerBtnCancel {
+  background: #263549;
+  color: #b5cde8;
+}
+
+.pickerBtnCancel:hover {
+  background: #324563;
+}
+
+.pickerBtnConfirm {
+  background: #4f8cff;
+  color: #fff;
+}
+
+.pickerBtnConfirm:hover {
+  background: #3d73db;
+}
+
+.pickerEmpty {
+  color: #7da8d4;
+  font-size: 0.85rem;
+  padding: 0.3rem 0;
+}

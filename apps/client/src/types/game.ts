@@ -4,9 +4,16 @@ export interface Player {
   score: number
 }
 
+export interface SelectedCollection {
+  id: number
+  type: 'default' | 'custom'
+}
+
 export interface GameRoomSettings {
   timer: number
   winScore: number
+  difficulty: number
+  selectedCollections: SelectedCollection[]
 }
 
 export interface GameRoom {
@@ -25,6 +32,7 @@ export interface RoomState {
   turnSecondsRemaining?: number | null
   currentTurnPlayerId?: string | null
   waitingForWordResolutionAtZero?: boolean
+  winner?: { playerId: string; playerName: string } | null
 }
 
 export interface ChatMessage {
@@ -70,6 +78,7 @@ export interface WsPayload {
   turnSecondsRemaining?: number | null
   currentTurnPlayerId?: string | null
   waitingForWordResolutionAtZero?: boolean
+  winner?: { playerId: string; playerName: string } | null
   word?: string | null
   fromPlayerId?: string
   signal?: VoiceSignalMessage

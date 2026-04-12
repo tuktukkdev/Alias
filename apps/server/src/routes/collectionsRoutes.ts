@@ -6,6 +6,7 @@ import {
   getCollectionWords,
   saveCollectionWords,
 } from "../services/collectionsService";
+import { prisma } from "../db/prisma";
 
 export function registerCollectionsRoutes(app: Express): void {
   /** GET /collections/:userId — list user's collections */
@@ -31,7 +32,7 @@ export function registerCollectionsRoutes(app: Express): void {
     }
     if (name.trim().length > 128) return res.status(400).json({ error: "Name too long" });
     const diff =
-      typeof difficulty === "number" ? Math.max(1, Math.min(10, Math.round(difficulty))) : 1;
+      typeof difficulty === "number" ? Math.max(1, Math.min(3, Math.round(difficulty))) : 1;
     const desc =
       typeof description === "string" && description.trim().length > 0
         ? description.trim().slice(0, 500)
@@ -81,6 +82,26 @@ export function registerCollectionsRoutes(app: Express): void {
       .map((w) => w.trim().slice(0, 128));
     const result = await saveCollectionWords(collectionId, uid, clean);
     if (result === null) return res.status(403).json({ error: "Forbidden" });
+    return res.json(result);
+  });
+
+  /** GET /default-collections — list all default collections */
+  app.get("/default-collections", async (_req: Request, res: Response) => {
+    const collections = await prisma.defaultCollection.findMany({
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        difficulty: true,
+        amountOfCards: true,
+        tags: { select: { tag: { select: { name: true } } } },
+      },
+      orderBy: { id: "asc" },
+    });
+    const result = collections.map((c) => ({
+      ...c,
+      tags: c.tags.map((t) => t.tag.name),
+    }));
     return res.json(result);
   });
 }

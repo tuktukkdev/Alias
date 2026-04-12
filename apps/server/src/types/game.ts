@@ -4,11 +4,24 @@ export interface Player {
   id: string;
   name: string;
   score: number;
+  userId?: number;
+}
+
+export interface PlayerGameStats {
+  guessed: number;
+  skipped: number;
+}
+
+export interface SelectedCollection {
+  id: number;
+  type: 'default' | 'custom';
 }
 
 export interface GameRoomSettings {
   timer: number;
   winScore: number;
+  difficulty: number;
+  selectedCollections: SelectedCollection[];
 }
 
 export interface GameRoom {
@@ -25,6 +38,11 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface WinnerInfo {
+  playerId: string;
+  playerName: string;
+}
+
 export interface RoomRecord {
   room: GameRoom;
   started: boolean;
@@ -36,6 +54,10 @@ export interface RoomRecord {
   currentTurnPlayerId: string | null;
   currentWord: string | null;
   waitingForWordResolutionAtZero: boolean;
+  usedWords: Set<string>;
+  playerStats: Map<string, PlayerGameStats>;
+  gameStartedAt: Date | null;
+  winner: WinnerInfo | null;
 }
 
 export interface ChatBroadcastEvent {
@@ -55,6 +77,7 @@ export interface RoomStateBroadcastEvent {
   turnSecondsRemaining: number | null;
   currentTurnPlayerId: string | null;
   waitingForWordResolutionAtZero: boolean;
+  winner: WinnerInfo | null;
 }
 
 export interface ActiveWordBroadcastEvent {

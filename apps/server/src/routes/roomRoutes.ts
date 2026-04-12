@@ -4,12 +4,14 @@ import { rooms, userRooms } from "../state/serverState";
 import {
   allPlayersConnected,
   buildRoomStatePayload,
+  endGame,
   removePlayerPermanently,
   resolveCurrentWord,
   startRoomGame,
 } from "../services/roomService";
 import { createId, getRouteParam, normalizeWord } from "../utils/common";
-import { ChatMessage, GameRoom, Player, RoomBroadcasters } from "../types/game";
+import { ChatMessage, GameRoom, Player, RoomBroadcasters, SelectedCollection } from "../types/game";
+import { countCollectionWords } from "../services/wordService";
 
 const broadcasters: RoomBroadcasters = {
   broadcastRoomState,
@@ -24,8 +26,10 @@ export const registerRoomRoutes = (app: Express): void => {
   app.post("/rooms", (req: Request, res: Response) => {
     const name = String(req.body?.name ?? "").trim();
     const timer = Number(req.body?.timer ?? 60);
-    const winScore = Number(req.body?.winScore ?? 10);
+    const winScore = Number(req.body?.winScore ?? 50);
+    const difficulty = Number(req.body?.difficulty ?? 1);
     const userId = String(req.body?.userId ?? "").trim() || null;
+    const userIdNum = userId ? parseInt(userId, 10) : NaN;
 
     if (!name) {
       return res.status(400).json({ error: "name is required" });
@@ -49,6 +53,7 @@ export const registerRoomRoutes = (app: Express): void => {
       id: createId("player"),
       name,
       score: 0,
+      userId: !isNaN(userIdNum) ? userIdNum : undefined,
     };
 
     const roomId = createId("room");
@@ -57,7 +62,9 @@ export const registerRoomRoutes = (app: Express): void => {
       hostId: player.id,
       settings: {
         timer: Number.isFinite(timer) ? Math.max(10, Math.min(300, timer)) : 60,
-        winScore: Number.isFinite(winScore) ? Math.max(1, winScore) : 10,
+        winScore: Number.isFinite(winScore) ? Math.max(20, Math.min(200, winScore)) : 50,
+        difficulty: Number.isFinite(difficulty) ? Math.max(1, Math.min(3, difficulty)) : 1,
+        selectedCollections: [],
       },
     };
 
@@ -72,6 +79,10 @@ export const registerRoomRoutes = (app: Express): void => {
       currentTurnPlayerId: null,
       currentWord: null,
       waitingForWordResolutionAtZero: false,
+      usedWords: new Set(),
+      playerStats: new Map(),
+      gameStartedAt: null,
+      winner: null,
     });
 
     if (userId) {
@@ -134,6 +145,10 @@ export const registerRoomRoutes = (app: Express): void => {
         .json({ error: "game already started; only existing players can reconnect" });
     }
 
+    if (record.room.players.length >= 10) {
+      return res.status(403).json({ error: "room is full (max 10 players)" });
+    }
+
     if (!name) {
       return res.status(400).json({ error: "name is required" });
     }
@@ -156,6 +171,7 @@ export const registerRoomRoutes = (app: Express): void => {
       id: createId("player"),
       name,
       score: 0,
+      userId: userId ? (parseInt(userId, 10) || undefined) : undefined,
     };
 
     record.room.players.push(player);
@@ -186,7 +202,9 @@ export const registerRoomRoutes = (app: Express): void => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
     const playerId = String(req.body?.playerId ?? "");
-    const timer = Number(req.body?.timer);
+    const timer = req.body?.timer !== undefined ? Number(req.body.timer) : undefined;
+    const difficulty = req.body?.difficulty !== undefined ? Number(req.body.difficulty) : undefined;
+    const winScore = req.body?.winScore !== undefined ? Number(req.body.winScore) : undefined;
 
     if (!record) {
       return res.status(404).json({ error: "room not found" });
@@ -196,14 +214,30 @@ export const registerRoomRoutes = (app: Express): void => {
       return res.status(403).json({ error: "only host can update settings" });
     }
 
-    if (!Number.isFinite(timer)) {
-      return res.status(400).json({ error: "timer must be a number" });
+    if (timer !== undefined) {
+      if (!Number.isFinite(timer)) {
+        return res.status(400).json({ error: "timer must be a number" });
+      }
+      record.room.settings.timer = Math.max(10, Math.min(300, timer));
+      if (record.turnSecondsRemaining !== null && !record.waitingForWordResolutionAtZero) {
+        record.turnSecondsRemaining = Math.min(record.turnSecondsRemaining, record.room.settings.timer);
+      }
     }
 
-    record.room.settings.timer = Math.max(10, Math.min(300, timer));
-    if (record.turnSecondsRemaining !== null && !record.waitingForWordResolutionAtZero) {
-      record.turnSecondsRemaining = Math.min(record.turnSecondsRemaining, record.room.settings.timer);
+    if (difficulty !== undefined) {
+      if (!Number.isFinite(difficulty)) {
+        return res.status(400).json({ error: "difficulty must be a number" });
+      }
+      record.room.settings.difficulty = Math.max(1, Math.min(3, difficulty));
     }
+
+    if (winScore !== undefined) {
+      if (!Number.isFinite(winScore)) {
+        return res.status(400).json({ error: "winScore must be a number" });
+      }
+      record.room.settings.winScore = Math.max(20, Math.min(200, winScore));
+    }
+
     broadcastRoomState(roomId, record);
     return res.json(buildRoomStatePayload(roomId, record));
   });
@@ -311,6 +345,9 @@ export const registerRoomRoutes = (app: Express): void => {
       );
       if (activePlayer) {
         activePlayer.score += 1;
+        const activeStats = record.playerStats.get(activePlayer.id) ?? { guessed: 0, skipped: 0 };
+        activeStats.guessed++;
+        record.playerStats.set(activePlayer.id, activeStats);
       }
 
       const solvedMessage: ChatMessage = {
@@ -353,6 +390,10 @@ export const registerRoomRoutes = (app: Express): void => {
 
     activePlayer.score = Math.max(0, activePlayer.score - 1);
 
+    const skipStats = record.playerStats.get(playerId) ?? { guessed: 0, skipped: 0 };
+    skipStats.skipped++;
+    record.playerStats.set(playerId, skipStats);
+
     const skippedMessage: ChatMessage = {
       id: createId("msg"),
       playerId: "system",
@@ -391,6 +432,45 @@ export const registerRoomRoutes = (app: Express): void => {
     removePlayerPermanently(roomId, playerId, broadcasters);
 
     return res.status(200).json({ ok: true });
+  });
+
+  app.put("/rooms/:roomId/collections", async (req: Request, res: Response) => {
+    const roomId = getRouteParam(req.params.roomId);
+    const record = rooms.get(roomId);
+    const playerId = String(req.body?.playerId ?? "");
+    const collections = req.body?.collections;
+
+    if (!record) {
+      return res.status(404).json({ error: "room not found" });
+    }
+
+    if (record.room.hostId !== playerId) {
+      return res.status(403).json({ error: "only host can update collections" });
+    }
+
+    if (!Array.isArray(collections)) {
+      return res.status(400).json({ error: "collections must be an array" });
+    }
+
+    const parsed: SelectedCollection[] = collections
+      .filter(
+        (c: unknown): c is { id: number; type: string } =>
+          typeof c === "object" &&
+          c !== null &&
+          typeof (c as Record<string, unknown>).id === "number" &&
+          ((c as Record<string, unknown>).type === "default" || (c as Record<string, unknown>).type === "custom"),
+      )
+      .map((c) => ({ id: c.id, type: c.type as "default" | "custom" }));
+
+    record.room.settings.selectedCollections = parsed;
+
+    const totalWords = await countCollectionWords(parsed);
+
+    broadcastRoomState(roomId, record);
+    return res.json({
+      ...buildRoomStatePayload(roomId, record),
+      totalCollectionWords: totalWords,
+    });
   });
 
   app.get("/players/:userId/room", (req: Request, res: Response) => {

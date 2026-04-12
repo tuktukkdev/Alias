@@ -1,5 +1,7 @@
-import { GAME_START_DELAY_MS, WORD_POOL, roomSockets, roomTickIntervals, rooms } from "../state/serverState";
-import { RoomBroadcasters, RoomRecord, RoomStateBroadcastEvent } from "../types/game";
+import { prisma } from "../db/prisma";
+import { GAME_START_DELAY_MS, roomSockets, roomTickIntervals, rooms } from "../state/serverState";
+import { Player, PlayerGameStats, RoomBroadcasters, RoomRecord, RoomStateBroadcastEvent, WinnerInfo } from "../types/game";
+import { pickWord } from "./wordService";
 
 export const buildRoomStatePayload = (
   roomId: string,
@@ -14,6 +16,7 @@ export const buildRoomStatePayload = (
   turnSecondsRemaining: record.turnSecondsRemaining,
   currentTurnPlayerId: record.currentTurnPlayerId,
   waitingForWordResolutionAtZero: record.waitingForWordResolutionAtZero,
+  winner: record.winner,
 });
 
 export const clearRoomTickInterval = (roomId: string): void => {
@@ -26,8 +29,15 @@ export const clearRoomTickInterval = (roomId: string): void => {
   roomTickIntervals.delete(roomId);
 };
 
-export const getRandomWord = (): string =>
-  WORD_POOL[Math.floor(Math.random() * WORD_POOL.length)] ?? "слово";
+export const getNextWord = async (record: RoomRecord): Promise<string> => {
+  const word = await pickWord(
+    record.room.settings.selectedCollections,
+    record.room.settings.difficulty,
+    record.usedWords,
+  );
+  record.usedWords.add(word);
+  return word;
+};
 
 export const getNextTurnPlayerId = (record: RoomRecord): string | null => {
   const { players } = record.room;
@@ -77,11 +87,13 @@ export const startRoomTickLoop = (roomId: string, broadcasters: RoomBroadcasters
       record.currentTurnPlayerId = getNextTurnPlayerId(record);
       record.turnSecondsRemaining = record.room.settings.timer;
       if (!record.currentWord) {
-        record.currentWord = getRandomWord();
+        void getNextWord(record).then((word) => {
+          record.currentWord = word;
+          broadcasters.broadcastActiveWord(roomId, record);
+        });
       }
       record.waitingForWordResolutionAtZero = false;
       broadcasters.broadcastRoomState(roomId, record);
-      broadcasters.broadcastActiveWord(roomId, record);
       return;
     }
 
@@ -115,19 +127,35 @@ export const resolveCurrentWord = (
   const timedOut = record.turnSecondsRemaining === 0 || record.waitingForWordResolutionAtZero;
 
   if (timedOut) {
+    // Check for winner before advancing the turn
+    const winScore = record.room.settings.winScore;
+    const topPlayer = record.room.players.reduce<Player | null>(
+      (best, p) => (!best || p.score > best.score ? p : best),
+      null,
+    );
+    if (topPlayer && topPlayer.score >= winScore) {
+      void endGame(roomId, record, topPlayer, broadcasters);
+      return;
+    }
+
     record.currentTurnPlayerId = getNextTurnPlayerId(record);
     record.turnSecondsRemaining = record.room.settings.timer;
   }
 
-  record.currentWord = getRandomWord();
+  record.currentWord = null;
   record.waitingForWordResolutionAtZero = false;
 
   if (record.turnSecondsRemaining === null) {
     record.turnSecondsRemaining = record.room.settings.timer;
   }
 
+  void getNextWord(record).then((word) => {
+    record.currentWord = word;
+    broadcasters.broadcastRoomState(roomId, record);
+    broadcasters.broadcastActiveWord(roomId, record);
+  });
+
   broadcasters.broadcastRoomState(roomId, record);
-  broadcasters.broadcastActiveWord(roomId, record);
 };
 
 export const removePlayerPermanently = (
@@ -144,11 +172,25 @@ export const removePlayerPermanently = (
   record.connectedPlayerIds.delete(playerId);
 
   if (record.started && record.currentTurnPlayerId === playerId && record.room.players.length > 0) {
+    // Check winner before giving next player a turn
+    const winScore = record.room.settings.winScore;
+    const topPlayer = record.room.players.reduce<Player | null>(
+      (best, p) => (!best || p.score > best.score ? p : best),
+      null,
+    );
+    if (topPlayer && topPlayer.score >= winScore) {
+      void endGame(roomId, record, topPlayer, broadcasters);
+      return;
+    }
+
     record.currentTurnPlayerId = getNextTurnPlayerId(record);
-    record.currentWord = getRandomWord();
+    record.currentWord = null;
     record.waitingForWordResolutionAtZero = false;
     record.turnSecondsRemaining = record.room.settings.timer;
-    broadcasters.broadcastActiveWord(roomId, record);
+    void getNextWord(record).then((word) => {
+      record.currentWord = word;
+      broadcasters.broadcastActiveWord(roomId, record);
+    });
   }
 
   if (record.room.hostId === playerId && record.room.players.length > 0) {
@@ -180,9 +222,85 @@ export const startRoomGame = (
   record.startedAt = new Date(Date.now() + GAME_START_DELAY_MS).toISOString();
   record.turnSecondsRemaining = record.room.settings.timer;
   record.currentTurnPlayerId = record.room.players[0]?.id ?? null;
-  record.currentWord = getRandomWord();
+  record.currentWord = null;
+  record.waitingForWordResolutionAtZero = false;
+  record.usedWords.clear();
+  record.playerStats = new Map();
+  record.gameStartedAt = new Date();
+  record.winner = null;
+
+  void getNextWord(record).then((word) => {
+    record.currentWord = word;
+    broadcasters.broadcastActiveWord(roomId, record);
+  });
+
+  broadcasters.broadcastRoomState(roomId, record);
+  startRoomTickLoop(roomId, broadcasters);
+};
+
+export const endGame = async (
+  roomId: string,
+  record: RoomRecord,
+  winner: Player,
+  broadcasters: RoomBroadcasters,
+): Promise<void> => {
+  clearRoomTickInterval(roomId);
+  record.winner = { playerId: winner.id, playerName: winner.name };
+  record.currentWord = null;
   record.waitingForWordResolutionAtZero = false;
   broadcasters.broadcastRoomState(roomId, record);
   broadcasters.broadcastActiveWord(roomId, record);
-  startRoomTickLoop(roomId, broadcasters);
+  await saveGameStats(record, record.winner);
 };
+
+async function saveGameStats(record: RoomRecord, winner: WinnerInfo): Promise<void> {
+  const hostPlayer = record.room.players.find((p) => p.id === record.room.hostId);
+  const hostUserId = hostPlayer?.userId;
+  const winnerPlayer = record.room.players.find((p) => p.id === winner.playerId);
+  const winnerUserId = winnerPlayer?.userId ?? null;
+
+  if (hostUserId) {
+    try {
+      await prisma.game.create({
+        data: {
+          startedDt: record.gameStartedAt ?? new Date(),
+          endedDt: new Date(),
+          players: JSON.stringify(record.room.players.map((p) => p.name)),
+          roomOwnerId: hostUserId,
+          score: JSON.stringify(
+            Object.fromEntries(record.room.players.map((p) => [p.name, p.score])),
+          ),
+          winnerId: winnerUserId,
+        },
+      });
+    } catch {
+      // non-critical
+    }
+  }
+
+  for (const player of record.room.players) {
+    if (!player.userId) continue;
+    const stats: PlayerGameStats = record.playerStats.get(player.id) ?? { guessed: 0, skipped: 0 };
+    const isWinner = player.id === winner.playerId;
+    try {
+      await prisma.userStats.upsert({
+        where: { userId: player.userId },
+        update: {
+          guessed: { increment: stats.guessed },
+          skipped: { increment: stats.skipped },
+          wins: { increment: isWinner ? 1 : 0 },
+          losses: { increment: isWinner ? 0 : 1 },
+        },
+        create: {
+          userId: player.userId,
+          guessed: stats.guessed,
+          skipped: stats.skipped,
+          wins: isWinner ? 1 : 0,
+          losses: isWinner ? 0 : 1,
+        },
+      });
+    } catch {
+      // non-critical
+    }
+  }
+}
