@@ -1,4 +1,5 @@
 import type { ChatMessage, Player, RoomState, VolumeMenuState } from '../types/game'
+import './GameScreen.css'
 
 interface GameScreenProps {
   roomState: RoomState

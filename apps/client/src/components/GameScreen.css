@@ -1,0 +1,279 @@
+/* ── Game Screen ─────────────────────────────────────────── */
+
+.gamePanel {
+  width: min(1100px, 100%);
+  gap: 0.85rem;
+}
+
+.gameLayout {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.25fr;
+  gap: 0.75rem;
+}
+
+.gameColumn {
+  border: 1px solid #304157;
+  border-radius: 12px;
+  background: #152235;
+  padding: 0.75rem;
+}
+
+.scoreboardSection {
+  display: grid;
+  gap: 0.1rem;
+  align-content: start;
+}
+
+.futureColumn {
+  min-height: 240px;
+  background: repeating-linear-gradient(
+    45deg,
+    #121f31,
+    #121f31 14px,
+    #17263b 14px,
+    #17263b 28px
+  );
+}
+
+.wordColumn {
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+}
+
+.wordCard {
+  min-height: 170px;
+  border: 1px solid #355173;
+  border-radius: 12px;
+  background: linear-gradient(160deg, #132339 0%, #1b3150 60%, #233a5f 100%);
+  display: grid;
+  place-items: center;
+  padding: 0.9rem;
+  text-align: center;
+}
+
+.wordValue {
+  margin: 0;
+  color: #f4fbff;
+  font-size: clamp(1.25rem, 2.6vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.wordHint {
+  margin: 0;
+  color: #c6d8ee;
+  font-size: 0.98rem;
+}
+
+.skipButton {
+  border: 1px solid #6e3d3d;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  background: #602f2f;
+  color: #ffe8e8;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.skipButton:hover {
+  background: #7a3a3a;
+}
+
+.skipButton:focus-visible {
+  outline: 2px solid #f5b4b4;
+  outline-offset: 2px;
+}
+
+.turnTimer {
+  margin: 0;
+  color: #b6dcff;
+  font-size: 0.95rem;
+}
+
+.turnTimer strong {
+  color: #e7f5ff;
+}
+
+/* ── Scoreboard ──────────────────────────────────────────── */
+
+.scoreboardTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #32435c;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #182336;
+  margin: 0;
+}
+
+.scoreboardTable th,
+.scoreboardTable td {
+  text-align: left;
+  padding: 0.55rem 0.7rem;
+}
+
+.scoreboardTable thead th {
+  background: #223149;
+  color: #d8e6ff;
+  font-weight: 700;
+}
+
+.scoreboardTable tbody tr {
+  border-top: 1px solid #2d3f57;
+  color: #eaf2ff;
+}
+
+.voiceHeaderCell,
+.voiceCell {
+  width: 64px;
+  text-align: center !important;
+}
+
+.voiceIndicator {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  border-radius: 50%;
+  background: #4a5b73;
+  box-shadow: inset 0 0 0 1px #7f93b3;
+  opacity: 0.85;
+}
+
+.voiceIndicatorActive {
+  background: #37d18f;
+  box-shadow: 0 0 0 0 rgba(55, 209, 143, 0.55);
+  animation: voicePulse 1.25s infinite;
+}
+
+@keyframes voicePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(55, 209, 143, 0.55);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(55, 209, 143, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(55, 209, 143, 0);
+  }
+}
+
+.highlightedPlayerRow {
+  background: #2a4b70;
+}
+
+/* ── Chat ────────────────────────────────────────────────── */
+
+.chatSection {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.chatList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+  max-height: 36vh;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #4a5ea0 #131f31;
+}
+
+.chatList::-webkit-scrollbar {
+  width: 11px;
+}
+
+.chatList::-webkit-scrollbar-track {
+  background: #131f31;
+  border-radius: 10px;
+}
+
+.chatList::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2b4f8f 0%, #544096 100%);
+  border: 2px solid #131f31;
+  border-radius: 10px;
+}
+
+.chatList::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3761ac 0%, #6650b3 100%);
+}
+
+.chatItem {
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #19273a;
+}
+
+.chatMeta {
+  margin: 0 0 0.16rem;
+  color: #a2bddf;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ownMessage {
+  background: #21415f;
+}
+
+.chatText {
+  margin: 0;
+  color: #eaf2ff;
+}
+
+.chatComposer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+}
+
+/* ── Volume Menu ─────────────────────────────────────────── */
+
+.volumeContextMenu {
+  position: fixed;
+  z-index: 30;
+  width: 250px;
+  padding: 0.7rem;
+  border-radius: 10px;
+  border: 1px solid #3f4f68;
+  background: #111d2ddd;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 18px #07101b66;
+}
+
+.volumeMenuTitle {
+  margin: 0 0 0.5rem;
+  color: #dce9ff;
+  font-size: 0.87rem;
+  font-weight: 700;
+}
+
+.volumeSlider {
+  width: 100%;
+}
+
+.volumeMenuValue {
+  margin: 0.35rem 0 0;
+  color: #a5b9d6;
+  font-size: 0.78rem;
+}
+
+@media (max-width: 460px) {
+  .chatComposer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .gameLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .futureColumn {
+    min-height: 120px;
+  }
+}

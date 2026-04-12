@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { API_BASE } from '../config/client'
 import type { AuthUser } from '../types/auth'
+import './CollectionsScreen.css'
 
 interface CollectionEntry {
   id: number

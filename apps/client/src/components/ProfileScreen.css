@@ -1,0 +1,53 @@
+/* ── Profile Screen ──────────────────────────────────────── */
+
+.profilePanel {
+  width: min(500px, 100%);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.profileCurrentName {
+  margin: 0;
+  color: #7a94ae;
+  font-size: 0.9rem;
+}
+
+.profileForm {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.profileDivider {
+  border: none;
+  border-top: 1px solid #2f3a4a;
+  margin: 0.25rem 0;
+}
+
+.avatarPreviewWrap {
+  display: flex;
+  justify-content: center;
+}
+
+.avatarPreviewImg {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2f3a4a;
+}
+
+.avatarPreviewDefault {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #1f8fb3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f2fbff;
+}
+
+.avatarPreviewDefault svg {
+  width: 54px;
+  height: 54px;
+}

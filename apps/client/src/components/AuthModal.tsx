@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import './AuthModal.css'
 
 type AuthTab = 'login' | 'register'
 

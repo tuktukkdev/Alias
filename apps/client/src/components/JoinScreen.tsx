@@ -1,3 +1,5 @@
+import './JoinScreen.css'
+
 interface JoinScreenProps {
   name: string
   roomCode: string

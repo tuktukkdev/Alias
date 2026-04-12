@@ -1,0 +1,86 @@
+/* ── Auth Modal ──────────────────────────────────────────── */
+
+.authDialog {
+  padding: 0;
+  border: 1px solid #2f3a4a;
+  border-radius: 16px;
+  background: #101925;
+  color: #e6eefc;
+  width: min(420px, calc(100vw - 2rem));
+}
+
+.authDialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.authDialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid #2f3a4a;
+}
+
+.authTabs {
+  display: flex;
+  gap: 0.2rem;
+  background: #182334;
+  border-radius: 8px;
+  padding: 0.2rem;
+}
+
+.authTab {
+  padding: 0.35rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.authTabActive {
+  background: #1f8fb3;
+  color: #f2fbff;
+}
+
+.authDialogClose {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7a94ae;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.authDialogClose:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.authDialogClose svg {
+  width: 18px;
+  height: 18px;
+}
+
+.authForm {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.authError {
+  margin: 0;
+  color: #e07070;
+  font-size: 0.85rem;
+}

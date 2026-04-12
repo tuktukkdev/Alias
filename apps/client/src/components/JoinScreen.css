@@ -1,0 +1,32 @@
+/* ── Join Screen ─────────────────────────────────────────── */
+
+.inputLocked {
+  color: #7a94ae;
+  cursor: default;
+  border-color: #2a3a4e;
+  background: #111e2d;
+}
+
+.inputLocked:focus {
+  outline: none;
+}
+
+.createRoomButton {
+  border: 1px solid #39597a;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #13243a;
+  color: #d9e9ff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.createRoomButton:hover {
+  background: #1a3351;
+}
+
+.createRoomButton:focus-visible {
+  outline: 2px solid #56c5e8;
+  outline-offset: 2px;
+}

@@ -1,0 +1,77 @@
+/* ── Stats Modal ─────────────────────────────────────────── */
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  z-index: 200;
+}
+
+.statsDialog {
+  width: min(340px, calc(100vw - 2rem));
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #2f3a4a;
+  background: #101925;
+  color: #e6eefc;
+}
+
+.statsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.authTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.modalCloseButton {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalCloseButton:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.statsTable tr + tr td {
+  border-top: 1px solid #1e2d3e;
+}
+
+.statsLabel {
+  padding: 0.55rem 0;
+  color: #7a94ae;
+  font-size: 0.9rem;
+}
+
+.statsValue {
+  padding: 0.55rem 0;
+  text-align: right;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #e6eefc;
+}

@@ -1,0 +1,153 @@
+/* ── Shared / Common ─────────────────────────────────────── */
+
+.screen {
+  min-height: calc(100vh - 56px);
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #2f3a4a;
+  background: #101925cc;
+  backdrop-filter: blur(4px);
+}
+
+.label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #d9e3f1;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid #39475b;
+  background: #182334;
+  font: inherit;
+  color: #eaf2ff;
+}
+
+.input:focus {
+  outline: 2px solid #32b0d5;
+  outline-offset: 1px;
+}
+
+.playButton {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #1f8fb3;
+  color: #f2fbff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.playButton:hover {
+  background: #187392;
+}
+
+.playButton:disabled {
+  background: #355664;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.playButton:focus-visible {
+  outline: 2px solid #56c5e8;
+  outline-offset: 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #f0f6ff;
+}
+
+.sectionTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #d9e3f1;
+}
+
+.hintText {
+  margin: 0;
+  color: #99afcb;
+  font-size: 0.92rem;
+}
+
+.backButton {
+  border: 1px solid #2f3a4a;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.backButton:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.exitButton {
+  margin-top: 0.75rem;
+  border: 1px solid #6e3030;
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+  background: transparent;
+  color: #f87171;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.exitButton:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.exitButton:focus-visible {
+  outline: 2px solid #f87171;
+  outline-offset: 2px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.formError {
+  margin: 0;
+  color: #e07070;
+  font-size: 0.85rem;
+}
+
+.formSuccess {
+  margin: 0;
+  color: #6dd89a;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 460px) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}

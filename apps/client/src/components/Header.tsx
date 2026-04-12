@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AuthUser } from '../types/auth'
+import './Header.css'
 
 interface HeaderProps {
   user: AuthUser | null

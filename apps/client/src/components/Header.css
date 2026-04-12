@@ -1,0 +1,227 @@
+/* ── Site Header ─────────────────────────────────────────── */
+
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid #2f3a4a;
+  background: #070d16cc;
+  backdrop-filter: blur(8px);
+}
+
+.siteHeaderInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 56px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.siteHeaderLogo {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #56c5e8;
+  letter-spacing: 0.05em;
+  user-select: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: default;
+}
+
+.siteHeaderLogoClickable {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.siteHeaderLogoClickable:hover {
+  color: #8ed9f4;
+}
+
+.siteHeaderNav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Auth buttons (logged-out state) */
+
+.authButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.headerBtn {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.headerBtnGhost {
+  border: 1px solid #39475b;
+  background: transparent;
+  color: #b0c4d8;
+}
+
+.headerBtnGhost:hover {
+  background: #182334;
+  border-color: #56c5e8;
+  color: #eaf2ff;
+}
+
+.headerBtnPrimary {
+  border: 0;
+  background: #1f8fb3;
+  color: #f2fbff;
+}
+
+.headerBtnPrimary:hover {
+  background: #187392;
+}
+
+/* ── User Menu ───────────────────────────────────────────── */
+
+.userMenu {
+  position: relative;
+}
+
+.avatarButton {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.3rem;
+  border: 1px solid #39475b;
+  border-radius: 24px;
+  background: transparent;
+  cursor: pointer;
+  color: #d9e3f1;
+  font: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.avatarButton:hover,
+.avatarButton[aria-expanded='true'] {
+  border-color: #56c5e8;
+  background: #182334;
+}
+
+.avatarImg {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatarDefault {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1f8fb3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #f2fbff;
+}
+
+.avatarDefault svg {
+  width: 18px;
+  height: 18px;
+}
+
+.avatarName {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatarChevron {
+  width: 18px;
+  height: 18px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ── Dropdown ────────────────────────────────────────────── */
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 200px;
+  border-radius: 10px;
+  border: 1px solid #2f3a4a;
+  background: #0f1c2d;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  z-index: 200;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 0;
+  background: transparent;
+  color: #d9e3f1;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dropdownItem:hover {
+  background: #182334;
+}
+
+.dropdownItem svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.friendsBadge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #e05555;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: #2f3a4a;
+  margin: 0.25rem 0;
+}
+
+.dropdownItemDanger {
+  color: #e07070;
+}
+
+.dropdownItemDanger:hover {
+  background: #2a1818;
+}

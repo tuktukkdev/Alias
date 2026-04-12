@@ -1,4 +1,5 @@
 import type { RoomState } from '../types/game'
+import './RoomScreen.css'
 
 interface RoomScreenProps {
   roomState: RoomState

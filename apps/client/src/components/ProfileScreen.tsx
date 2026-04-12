@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { API_BASE } from '../config/client'
 import type { AuthUser } from '../types/auth'
+import './ProfileScreen.css'
 
 interface ProfileScreenProps {
   user: AuthUser

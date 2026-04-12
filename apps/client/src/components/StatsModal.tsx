@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../config/client'
 import type { AuthUser } from '../types/auth'
+import './StatsModal.css'
 
 interface UserStats {
   guessed: number

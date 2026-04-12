@@ -1,0 +1,143 @@
+/* ── Friends Screen ──────────────────────────────────────── */
+
+.friendsPanel {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.friendsSection {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.friendsBadgeInline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  margin-left: 0.5rem;
+  border-radius: 10px;
+  background: #e05555;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.friendsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.friendsItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: #182334;
+  gap: 0.5rem;
+}
+
+.friendsName {
+  flex: 1;
+  font-weight: 600;
+  color: #d9e3f1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friendsActions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.friendsAcceptBtn {
+  border: 1px solid #2a6e4a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: #1a4a35;
+  color: #7ee8a2;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsAcceptBtn:hover {
+  background: #235c43;
+}
+
+.friendsDeclineBtn {
+  border: 1px solid #4e2a2a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  color: #e07070;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsDeclineBtn:hover {
+  background: rgba(224, 112, 112, 0.1);
+}
+
+.friendsRemoveBtn {
+  border: 1px solid #2f3a4a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  color: #7a94ae;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsRemoveBtn:hover {
+  background: #182334;
+  color: #d9e3f1;
+}
+
+.friendsJoinBtn {
+  border: 1px solid #1a5a7a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: #0f3a52;
+  color: #56c5e8;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsJoinBtn:hover:not(:disabled) {
+  background: #1a4f6e;
+}
+
+.friendsJoinBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.friendsJoinHint {
+  font-size: 0.78rem;
+  color: #e07070;
+  white-space: nowrap;
+}
+
+.friendsSendForm {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.friendsSendForm .input {
+  flex: 1;
+}
