@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                     Int                 @id @default(autoincrement())
+  username               String              @unique @db.VarChar(64)
+  createdAt              DateTime            @default(now()) @map("created_at")
+  password               String              @db.VarChar(255)
+  email                  String              @unique @db.VarChar(255)
+  picture                UserPicture?
+  stats                  UserStats?
+  collections            UserCollection[]
+  gamesOwned             Game[]              @relation("GameOwner")
+  gamesWon               Game[]              @relation("GameWinner")
+  sentFriendRequests     UserFriendRequest[] @relation("FriendRequestFrom")
+  receivedFriendRequests UserFriendRequest[] @relation("FriendRequestTo")
+  friends                UserFriend[]        @relation("UserFriendsUser")
+  friendOf               UserFriend[]        @relation("UserFriendsFriend")
+
+  @@map("users")
+}
+
+model UserPicture {
+  userId      Int    @id @map("user_id")
+  picturePath String @map("picture_path") @db.VarChar(512)
+  format      String @db.VarChar(32)
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_picture")
+}
+
+model UserFriend {
+  userId   Int  @map("user_id")
+  friendId Int  @map("friend_id")
+  user     User @relation("UserFriendsUser", fields: [userId], references: [id], onDelete: Cascade)
+  friend   User @relation("UserFriendsFriend", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@id([userId, friendId])
+  @@map("user_friends")
+}
+
+model UserFriendRequest {
+  userIdFrom Int  @map("user_id_from")
+  userIdTo   Int  @map("user_id_to")
+  fromUser   User @relation("FriendRequestFrom", fields: [userIdFrom], references: [id], onDelete: Cascade)
+  toUser     User @relation("FriendRequestTo", fields: [userIdTo], references: [id], onDelete: Cascade)
+
+  @@id([userIdFrom, userIdTo])
+  @@map("user_friend_request")
+}
+
+model UserStats {
+  userId  Int  @id @map("user_id")
+  guessed Int  @default(0)
+  skipped Int  @default(0)
+  wins    Int  @default(0)
+  losses  Int  @default(0)
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stats")
+}
+
+model DefaultCollection {
+  id            Int               @id @default(autoincrement())
+  name          String            @db.VarChar(128)
+  description   String?           @db.VarChar(500)
+  amountOfCards Int               @default(0) @map("amount_of_cards")
+  difficulty    Int               @default(1)
+  cardLinks     CardsCollection[]
+  tags          CollectionTag[]
+
+  @@map("default_collections")
+}
+
+model Tag {
+  id    Int             @id @default(autoincrement())
+  name  String          @unique @db.VarChar(64)
+  links CollectionTag[]
+
+  @@map("tags")
+}
+
+model CollectionTag {
+  collectionId Int               @map("collection_id")
+  tagId        Int               @map("tag_id")
+  collection   DefaultCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  tag          Tag               @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, tagId])
+  @@map("collection_tags")
+}
+
+model UserCollection {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(128)
+  description   String?         @db.VarChar(500)
+  difficulty    Int             @default(1)
+  amountOfCards Int             @default(0) @map("amount_of_cards")
+  creatorId     Int             @map("creator_id")
+  creator       User            @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  cards         UserCard[]
+
+  @@map("user_collections")
+}
+
+model UserCard {
+  id               Int            @id @default(autoincrement())
+  word             String         @db.VarChar(128)
+  difficulty       Int            @default(1)
+  userCollectionId Int            @map("user_collection_id")
+  collection       UserCollection @relation(fields: [userCollectionId], references: [id], onDelete: Cascade)
+
+  @@map("user_cards")
+}
+
+model Card {
+  id         Int               @id @default(autoincrement())
+  word       String            @db.VarChar(128)
+  difficulty Int               @default(1)
+  links      CardsCollection[]
+
+  @@map("cards")
+}
+
+model CardsCollection {
+  collectionId Int               @map("collection_id")
+  cardId       Int               @map("card_id")
+  collection   DefaultCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  card         Card              @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, cardId])
+  @@map("cards_collections")
+}
+
+model Game {
+  gameId      Int       @id @default(autoincrement()) @map("game_id")
+  startedDt   DateTime  @default(now()) @map("started_dt")
+  endedDt     DateTime? @map("ended_dt")
+  players     String    @db.Text
+  roomOwnerId Int       @map("room_owner_id")
+  score       String    @db.Text
+  winnerId    Int?      @map("winner_id")
+  roomOwner   User      @relation("GameOwner", fields: [roomOwnerId], references: [id], onDelete: Restrict)
+  winner      User?     @relation("GameWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+
+  @@map("games")
+}

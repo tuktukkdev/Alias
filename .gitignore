@@ -1,0 +1,15 @@
+# Dependencies
+apps/*/node_modules/
+
+# Build outputs
+apps/*/dist/
+apps/*/dist-ssr/
+
+# Environment files
+apps/*/.env
+
+# Generated artifacts
+apps/server/src/generated/prisma/
+
+# Source maps
+*.js.map
