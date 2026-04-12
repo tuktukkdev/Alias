@@ -32,6 +32,23 @@
   color: #56c5e8;
   letter-spacing: 0.05em;
   user-select: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: default;
+}
+
+.siteHeaderLogoClickable {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.siteHeaderLogoClickable:hover {
+  color: #8ed9f4;
 }
 
 .siteHeaderNav {
@@ -771,6 +788,32 @@
   color: #d9e3f1;
 }
 
+.friendsJoinBtn {
+  border: 1px solid #1a5a7a;
+  border-radius: 8px;
+  padding: 0.3rem 0.7rem;
+  background: #0f3a52;
+  color: #56c5e8;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.friendsJoinBtn:hover:not(:disabled) {
+  background: #1a4f6e;
+}
+
+.friendsJoinBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.friendsJoinHint {
+  font-size: 0.78rem;
+  color: #e07070;
+  white-space: nowrap;
+}
+
 .friendsSendForm {
   display: flex;
   gap: 0.6rem;
@@ -880,6 +923,300 @@
   padding: 0;
   display: grid;
   gap: 0.45rem;
+}
+
+/* ── Collections Screen ─────────────────────────────────────────────────── */
+
+.collectionsScreen {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+
+.collectionsPanel {
+  width: 100%;
+  max-width: 720px;
+  background: #0d2233;
+  border: 1px solid #1e3a52;
+  border-radius: 10px;
+  padding: 1.75rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.collectionsPanelHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.collectionsBackBtn {
+  background: none;
+  border: none;
+  color: #56c5e8;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.collectionsBackBtn:hover {
+  color: #8ed9f4;
+}
+
+.collectionsPanelTitle {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #e8f4f8;
+}
+
+.collectionsMsg {
+  margin: 0;
+  color: #a0bfcc;
+  font-size: 0.95rem;
+}
+
+.collectionsError {
+  color: #e87070;
+}
+
+.collectionsEmpty {
+  color: #6a9ab0;
+  font-style: italic;
+}
+
+.collectionsTableWrap {
+  overflow-x: auto;
+}
+
+.collectionsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.collectionsTable th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  color: #7aafcc;
+  font-weight: 600;
+  border-bottom: 1px solid #1e3a52;
+  white-space: nowrap;
+}
+
+.collectionsTableCenter {
+  text-align: center !important;
+}
+
+.collectionsTableRow {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.collectionsTableRow:hover {
+  background: #112d42;
+}
+
+.collectionsTable td {
+  padding: 0.6rem 0.75rem;
+  color: #d0e8f2;
+  border-bottom: 1px solid #162b3e;
+  vertical-align: middle;
+}
+
+.collectionsTableName {
+  font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collectionsTableDesc {
+  max-width: 260px;
+  color: #8aabbc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collectionsTableActions {
+  text-align: right;
+  width: 2.5rem;
+}
+
+.collectionsDeleteBtn {
+  background: none;
+  border: none;
+  color: #8aabbc;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.collectionsDeleteBtn:hover {
+  background: #1e3a52;
+  color: #e87070;
+}
+
+/* Create form */
+.collectionsCreateSection {
+  border-top: 1px solid #1e3a52;
+  padding-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.collectionsCreateTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #a0d4e8;
+}
+
+.collectionsCreateForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.collectionsFormRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.collectionsFormRowInline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.collectionsLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #7aafcc;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.collectionsLabelHint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #5a8fa6;
+}
+
+.collectionsInput {
+  background: #0a1d2e;
+  border: 1px solid #1e3a52;
+  border-radius: 6px;
+  color: #e8f4f8;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  outline: none;
+}
+
+.collectionsInput:focus {
+  border-color: #56c5e8;
+}
+
+.collectionsInputSmall {
+  background: #0a1d2e;
+  border: 1px solid #1e3a52;
+  border-radius: 6px;
+  color: #e8f4f8;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  outline: none;
+  width: 80px;
+}
+
+.collectionsInputSmall:focus {
+  border-color: #56c5e8;
+}
+
+.collectionsFormError {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #e87070;
+}
+
+.collectionsBtn {
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.collectionsBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.collectionsBtnPrimary {
+  background: #0f3a52;
+  color: #56c5e8;
+  border: 1px solid #1e5a7a;
+}
+
+.collectionsBtnPrimary:hover:not(:disabled) {
+  background: #164d6b;
+}
+
+/* Word editor */
+.collectionsWordEditorDesc {
+  margin: 0;
+  color: #8aabbc;
+  font-size: 0.9rem;
+}
+
+.collectionsWordEditorMeta {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #7aafcc;
+}
+
+.collectionsWordArea {
+  background: #0a1d2e;
+  border: 1px solid #1e3a52;
+  border-radius: 6px;
+  color: #e8f4f8;
+  font-size: 0.9rem;
+  font-family: monospace;
+  padding: 0.6rem 0.75rem;
+  resize: vertical;
+  outline: none;
+  line-height: 1.55;
+}
+
+.collectionsWordArea:focus {
+  border-color: #56c5e8;
+}
+
+.collectionsWordEditorActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.collectionsWordsSaveMsg {
+  font-size: 0.85rem;
+  color: #56c5e8;
+}
+
+.collectionsWordsSaveMsgError {
+  color: #e87070;
 }
 
 .playerItem {

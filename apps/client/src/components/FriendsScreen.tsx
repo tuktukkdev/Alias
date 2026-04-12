@@ -25,6 +25,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
   const [sendInput, setSendInput] = useState('')
   const [sendStatus, setSendStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [sending, setSending] = useState(false)
+  const [joinStatus, setJoinStatus] = useState<Record<number, 'loading' | 'not_in_lobby'>>({})
 
   const loadData = async () => {
     try {
@@ -116,6 +117,23 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
     void loadData()
   }
 
+  const handleJoin = async (friendId: number) => {
+    setJoinStatus((prev) => ({ ...prev, [friendId]: 'loading' }))
+    try {
+      const res = await fetch(`${API_BASE}/players/${friendId}/room`)
+      if (res.status === 404) {
+        setJoinStatus((prev) => ({ ...prev, [friendId]: 'not_in_lobby' }))
+        setTimeout(() => setJoinStatus((prev) => { const next = { ...prev }; delete next[friendId]; return next }), 2500)
+        return
+      }
+      const data = (await res.json()) as { roomId: string }
+      window.location.href = `/room/${data.roomId}`
+    } catch {
+      setJoinStatus((prev) => ({ ...prev, [friendId]: 'not_in_lobby' }))
+      setTimeout(() => setJoinStatus((prev) => { const next = { ...prev }; delete next[friendId]; return next }), 2500)
+    }
+  }
+
   return (
     <main className="screen">
       <section className="panel friendsPanel">
@@ -177,13 +195,26 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
                   {data.friends.map((f) => (
                     <li key={f.id} className="friendsItem">
                       <span className="friendsName">{f.username}</span>
-                      <button
-                        type="button"
-                        className="friendsRemoveBtn"
-                        onClick={() => void handleRemove(f.id)}
-                      >
-                        Remove
-                      </button>
+                      <div className="friendsActions">
+                        <button
+                          type="button"
+                          className="friendsJoinBtn"
+                          disabled={joinStatus[f.id] === 'loading'}
+                          onClick={() => void handleJoin(f.id)}
+                        >
+                          {joinStatus[f.id] === 'loading' ? '…' : 'Join'}
+                        </button>
+                        {joinStatus[f.id] === 'not_in_lobby' && (
+                          <span className="friendsJoinHint">Not in a lobby</span>
+                        )}
+                        <button
+                          type="button"
+                          className="friendsRemoveBtn"
+                          onClick={() => void handleRemove(f.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>

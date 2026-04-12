@@ -8,9 +8,10 @@ interface HeaderProps {
   onRegisterClick: () => void
   onLogout: () => void
   onNavigate: (page: 'profile' | 'friends' | 'stats' | 'collections') => void
+  onLogoClick?: () => void
 }
 
-export function Header({ user, pendingFriendRequests, onLoginClick, onRegisterClick, onLogout, onNavigate }: HeaderProps) {
+export function Header({ user, pendingFriendRequests, onLoginClick, onRegisterClick, onLogout, onNavigate, onLogoClick }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -37,7 +38,13 @@ export function Header({ user, pendingFriendRequests, onLoginClick, onRegisterCl
   return (
     <header className="siteHeader">
       <div className="siteHeaderInner">
-        <span className="siteHeaderLogo">Alias</span>
+        <button
+          type="button"
+          className={`siteHeaderLogo${onLogoClick ? ' siteHeaderLogoClickable' : ''}`}
+          onClick={onLogoClick}
+          disabled={!onLogoClick}
+          aria-label="Go to main page"
+        >Alias</button>
         <nav className="siteHeaderNav">
           {user ? (
             <div className="userMenu" ref={dropdownRef}>

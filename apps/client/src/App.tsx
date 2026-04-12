@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import './App.css'
 import { ROOM_PATH_PREFIX } from './config/client'
 import { AuthModal } from './components/AuthModal'
+import CollectionsScreen from './components/CollectionsScreen'
 import { FriendsScreen } from './components/FriendsScreen'
 import { GameScreen } from './components/GameScreen'
 import { Header } from './components/Header'
@@ -60,7 +61,7 @@ function App() {
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null)
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
-  const [page, setPage] = useState<'main' | 'profile' | 'friends'>('main')
+  const [page, setPage] = useState<'main' | 'profile' | 'friends' | 'collections'>('main')
   const [showStats, setShowStats] = useState(false)
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0)
 
@@ -943,18 +944,18 @@ function App() {
     const currentRoomId = roomState.roomId
     const currentPlayerId = playerId
 
+    try {
+      await exitRoomRequest(currentRoomId, currentPlayerId, authUser?.id)
+    } catch {
+      // Proceed with local cleanup even on network error.
+    }
+
     setRoomState(null)
     setPlayerId(null)
     setActiveWord(null)
     setChatMessages([])
     clearStoredRoomSession()
     window.history.replaceState(null, '', '/')
-
-    try {
-      await exitRoomRequest(currentRoomId, currentPlayerId, authUser?.id)
-    } catch {
-      // Ignore network errors on exit — local state is already cleared.
-    }
   }
 
   const handleLogin = async (username: string, password: string) => {
@@ -1052,6 +1053,8 @@ function App() {
       setPage('profile')
     } else if (nav === 'friends') {
       setPage('friends')
+    } else if (nav === 'collections') {
+      setPage('collections')
     } else if (nav === 'stats') {
       setShowStats(true)
     }
@@ -1078,6 +1081,11 @@ function App() {
       user={authUser}
       onBack={() => setPage('main')}
       onPendingCountChange={setPendingFriendRequests}
+    />
+  ) : page === 'collections' && authUser ? (
+    <CollectionsScreen
+      user={authUser}
+      onBack={() => setPage('main')}
     />
   ) : roomState?.started ? (
     <GameScreen
@@ -1149,6 +1157,7 @@ function App() {
         onRegisterClick={() => setAuthModal('register')}
         onLogout={handleLogout}
         onNavigate={handleNavigate}
+        onLogoClick={!roomState ? () => setPage('main') : undefined}
       />
       {screenContent}
       {showStats && authUser && (

@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { registerAuthRoutes } from "./routes/authRoutes";
+import { registerCollectionsRoutes } from "./routes/collectionsRoutes";
 import { registerFriendsRoutes } from "./routes/friendsRoutes";
 import { registerRoomRoutes } from "./routes/roomRoutes";
 import { registerSocketServer } from "./ws/socketServer";
@@ -18,7 +19,7 @@ app.use(express.json({ limit: "4mb" }));
 app.use((_: Request, res: Response, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Content-Type");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
   next();
 });
 
@@ -27,6 +28,7 @@ app.options(/.*/, (_: Request, res: Response) => {
 });
 
 registerAuthRoutes(app);
+registerCollectionsRoutes(app);
 registerFriendsRoutes(app);
 registerRoomRoutes(app);
 
