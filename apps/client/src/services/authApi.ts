@@ -72,3 +72,10 @@ export async function resendVerificationRequest(userId: string): Promise<Respons
     body: JSON.stringify({ userId: Number(userId) }),
   })
 }
+
+export async function fetchEmailVerifiedRequest(userId: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/auth/profile/${encodeURIComponent(userId)}`)
+  if (!res.ok) return false
+  const data = (await res.json()) as { emailVerified: boolean }
+  return data.emailVerified
+}

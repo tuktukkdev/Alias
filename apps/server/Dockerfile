@@ -5,7 +5,8 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate
+# prisma generate only reads the schema file, not the DB — dummy URL satisfies prisma.config.ts
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
 RUN npm run build
 
 EXPOSE 3000

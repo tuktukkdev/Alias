@@ -16,7 +16,7 @@ jobs:
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /app
+            cd ~/Alias/apps
             git pull origin main
             # Rebuild and restart only app containers.
             # postgres and redis keep running — volumes (pgdata, uploads) are untouched.

@@ -27,6 +27,7 @@ services:
       DATABASE_URL: postgresql://postgres:prodpassword32@postgres:5432/alias
       REDIS_URL: redis://redis:6379
       FRONTEND_URL: https://bluefieldapps.com
+      SERVER_BASE_URL: https://bluefieldapps.com
       RESEND_API_KEY: ${RESEND_API_KEY}
       EMAIL_FROM: ${EMAIL_FROM}
     volumes:

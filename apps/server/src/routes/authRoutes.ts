@@ -6,6 +6,7 @@ import {
   getExistingPicturePath,
   getUserAvatarUrl,
   getUserEmail,
+  getUserEmailVerified,
   getUserStats,
   loginUser,
   registerUser,
@@ -133,6 +134,18 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
+  app.get("/auth/profile/:userId", async (req: Request, res: Response) => {
+    const userId = Number(req.params.userId);
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
+    const emailVerified = await getUserEmailVerified(userId);
+    if (emailVerified === null) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    return res.json({ emailVerified });
+  });
+
   app.get("/auth/stats/:userId", async (req: Request, res: Response) => {
     const userId = Number(req.params.userId);
     if (!userId) {
@@ -184,7 +197,8 @@ export const registerAuthRoutes = (app: Express): void => {
     fs.writeFileSync(path.join(avatarsDir, filename), Buffer.from(base64Data, "base64"));
     await upsertUserPicture(userId, filename, ext);
 
-    const avatarUrl = `http://localhost:3000/uploads/avatars/${filename}`;
+    const base = (process.env.SERVER_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+    const avatarUrl = `${base}/uploads/avatars/${filename}`;
     return res.json({ avatarUrl });
   });
 

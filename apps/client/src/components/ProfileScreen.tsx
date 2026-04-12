@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../config/client'
-import { resendVerificationRequest } from '../services/authApi'
+import { fetchEmailVerifiedRequest, resendVerificationRequest } from '../services/authApi'
 import type { AuthUser } from '../types/auth'
 import './ProfileScreen.css'
 
@@ -36,6 +36,13 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
   const [resendLoading, setResendLoading] = useState(false)
   const [resendMessage, setResendMessage] = useState('')
   const [resendError, setResendError] = useState('')
+
+  useEffect(() => {
+    fetchEmailVerifiedRequest(user.id).then((verified) => {
+      setEmailVerified(verified)
+      if (verified) onEmailVerified()
+    }).catch(() => {})
+  }, [])
 
   const handleUsernameSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

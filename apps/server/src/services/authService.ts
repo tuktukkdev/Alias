@@ -151,7 +151,8 @@ export async function getUserStats(userId: number): Promise<UserStats | null> {
 export async function getUserAvatarUrl(userId: number): Promise<string | null> {
   const pic = await prisma.userPicture.findUnique({ where: { userId } });
   if (!pic) return null;
-  return `http://localhost:3000/uploads/avatars/${pic.picturePath}`;
+  const base = (process.env.SERVER_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  return `${base}/uploads/avatars/${pic.picturePath}`;
 }
 
 export async function upsertUserPicture(
@@ -174,6 +175,11 @@ export async function getExistingPicturePath(userId: number): Promise<string | n
 export async function getUserEmail(userId: number): Promise<string | null> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
   return user?.email ?? null;
+}
+
+export async function getUserEmailVerified(userId: number): Promise<boolean | null> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { emailVerified: true } });
+  return user?.emailVerified ?? null;
 }
 
 export async function resendVerificationEmail(userId: number): Promise<{ ok: true; email: string; token: string } | { ok: false; code: "USER_NOT_FOUND" | "ALREADY_VERIFIED" }> {
