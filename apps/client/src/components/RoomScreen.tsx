@@ -8,6 +8,7 @@ interface RoomScreenProps {
   isHost: boolean
   canStartGame: boolean
   statusMessage: string
+  wsBlocked?: boolean
   roomPathPrefix: string
   onUpdateTimer: (timer: number) => void
   onUpdateDifficulty: (difficulty: number) => void
@@ -23,6 +24,7 @@ export function RoomScreen({
   isHost,
   canStartGame,
   statusMessage,
+  wsBlocked,
   roomPathPrefix,
   onUpdateTimer,
   onUpdateDifficulty,
@@ -179,6 +181,13 @@ export function RoomScreen({
         ) : null}
 
         {roomState.started ? <p className="startedText">Game started.</p> : null}
+        {wsBlocked && (
+          <p className="hintText" style={{ color: '#c0392b', fontWeight: 600 }}>
+            ⚠️ Real-time connection blocked. Likely cause: your router firewall or antivirus
+            (e.g. Kaspersky, ESET) is filtering WebSocket traffic. Try: disable antivirus network
+            protection, reboot your router, or switch to mobile hotspot / VPN.
+          </p>
+        )}
         {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
 
         <button type="button" className="exitButton" onClick={onExitRoom}>

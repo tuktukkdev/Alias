@@ -82,6 +82,7 @@ function App() {
 
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
+  const [wsBlocked, setWsBlocked] = useState(false)
 
   /* ── Auth ─────────────────────────────────────────────── */
   const {
@@ -419,6 +420,7 @@ function App() {
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
     let active = true
     let reconnectDelay = 1000
+    let failCount = 0
 
     const connect = () => {
       if (!active) return
@@ -428,6 +430,8 @@ function App() {
 
       socket.onopen = () => {
         reconnectDelay = 1000
+        failCount = 0
+        setWsBlocked(false)
       }
 
       socket.onmessage = (event) => {
@@ -473,6 +477,8 @@ function App() {
         if (chatSocketRef.current === socket) chatSocketRef.current = null
         if (currentSocket === socket) currentSocket = null
         if (active) {
+          failCount += 1
+          if (failCount >= 3) setWsBlocked(true)
           reconnectTimeout = setTimeout(() => {
             reconnectDelay = Math.min(reconnectDelay * 2, 30000)
             connect()
@@ -485,6 +491,7 @@ function App() {
 
     return () => {
       active = false
+      setWsBlocked(false)
       if (reconnectTimeout !== null) clearTimeout(reconnectTimeout)
       if (currentSocket) {
         currentSocket.close()
@@ -604,6 +611,7 @@ function App() {
         isHost={isHost}
         canStartGame={canStartGame}
         statusMessage={statusMessage}
+        wsBlocked={wsBlocked}
         roomPathPrefix={ROOM_PATH_PREFIX}
         onUpdateTimer={(t) => void updateTimer(t)}
         onUpdateDifficulty={(d) => void updateDifficulty(d)}
