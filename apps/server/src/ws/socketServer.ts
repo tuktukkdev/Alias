@@ -42,7 +42,15 @@ export const registerSocketServer = (server: Server): WebSocketServer => {
       }
     }
 
+    // Keep-alive ping every 30s to prevent Cloudflare's 100s idle WebSocket timeout
+    const pingInterval = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.ping();
+      }
+    }, 30000);
+
     socket.on("close", () => {
+      clearInterval(pingInterval);
       const closedRoomId = socketRooms.get(socket);
       const closedPlayerId = socketPlayers.get(socket);
       removeSocketFromRoom(socket);

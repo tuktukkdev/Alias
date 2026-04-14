@@ -163,7 +163,6 @@
 
   .screen {
     padding: 1rem 0.75rem;
-    min-height: calc(100vh - 56px - 70px);
   }
 
   .panel {

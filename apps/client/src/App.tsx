@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import './styles/common.css'
-import { ROOM_PATH_PREFIX, WS_BASE } from './config/client'
+import { API_BASE, ROOM_PATH_PREFIX, WS_BASE } from './config/client'
 import desktopBck from './assets/desktop_bck.svg'
 import mobileBck from './assets/mobile_bck.svg'
 import { AuthModal } from './components/AuthModal'
@@ -323,7 +323,7 @@ function App() {
     if (!authUser) { setPendingFriendRequests(0); return }
     const fetchPending = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/friends/${authUser.id}/pending-count`)
+        const res = await fetch(`${API_BASE}/friends/${authUser.id}/pending-count`)
         if (res.ok) setPendingFriendRequests(((await res.json()) as { count: number }).count)
       } catch { /* ignore */ }
     }
@@ -415,55 +415,81 @@ function App() {
 
     const wsBase = WS_BASE ?? `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`
     const wsUrl = `${wsBase}/ws?roomId=${encodeURIComponent(roomState.roomId)}&playerId=${encodeURIComponent(playerId)}`
-    const socket = new WebSocket(wsUrl)
-    chatSocketRef.current = socket
+    let currentSocket: WebSocket | null = null
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
+    let active = true
+    let reconnectDelay = 1000
 
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as WsPayload
+    const connect = () => {
+      if (!active) return
+      const socket = new WebSocket(wsUrl)
+      currentSocket = socket
+      chatSocketRef.current = socket
 
-        if (data.type === 'room_state' && data.roomId === roomState.roomId && data.room) {
-          setRoomState(mapRoomState({
-            roomId: data.roomId,
-            room: data.room,
-            started: data.started,
-            startRequested: data.startRequested,
-            startedAt: data.startedAt,
-            connectedPlayerIds: data.connectedPlayerIds,
-            turnSecondsRemaining: data.turnSecondsRemaining,
-            currentTurnPlayerId: data.currentTurnPlayerId,
-            waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
-            winner: data.winner,
-          }))
-          return
+      socket.onopen = () => {
+        reconnectDelay = 1000
+      }
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as WsPayload
+
+          if (data.type === 'room_state' && data.roomId === roomState.roomId && data.room) {
+            setRoomState(mapRoomState({
+              roomId: data.roomId,
+              room: data.room,
+              started: data.started,
+              startRequested: data.startRequested,
+              startedAt: data.startedAt,
+              connectedPlayerIds: data.connectedPlayerIds,
+              turnSecondsRemaining: data.turnSecondsRemaining,
+              currentTurnPlayerId: data.currentTurnPlayerId,
+              waitingForWordResolutionAtZero: data.waitingForWordResolutionAtZero,
+              winner: data.winner,
+            }))
+            return
+          }
+
+          if (data.type === 'active_word' && data.roomId === roomState.roomId) {
+            setActiveWord(data.word ?? null)
+            return
+          }
+
+          if (data.type === 'voice_signal' && data.roomId === roomState.roomId && data.fromPlayerId && data.signal) {
+            handleVoiceSignal(data.fromPlayerId, data.signal)
+            return
+          }
+
+          if (data.type === 'chat_message' && data.message) {
+            const msg = data.message
+            setChatMessages((current) =>
+              current.some((m) => m.id === msg.id) ? current : [...current, msg],
+            )
+          }
+        } catch { /* ignore malformed payloads */ }
+      }
+
+      socket.onclose = () => {
+        if (chatSocketRef.current === socket) chatSocketRef.current = null
+        if (currentSocket === socket) currentSocket = null
+        if (active) {
+          reconnectTimeout = setTimeout(() => {
+            reconnectDelay = Math.min(reconnectDelay * 2, 30000)
+            connect()
+          }, reconnectDelay)
         }
-
-        if (data.type === 'active_word' && data.roomId === roomState.roomId) {
-          setActiveWord(data.word ?? null)
-          return
-        }
-
-        if (data.type === 'voice_signal' && data.roomId === roomState.roomId && data.fromPlayerId && data.signal) {
-          handleVoiceSignal(data.fromPlayerId, data.signal)
-          return
-        }
-
-        if (data.type === 'chat_message' && data.message) {
-          const msg = data.message
-          setChatMessages((current) =>
-            current.some((m) => m.id === msg.id) ? current : [...current, msg],
-          )
-        }
-      } catch { /* ignore malformed payloads */ }
+      }
     }
 
-    socket.onclose = () => {
-      if (chatSocketRef.current === socket) chatSocketRef.current = null
-    }
+    connect()
 
     return () => {
-      socket.close()
-      if (chatSocketRef.current === socket) chatSocketRef.current = null
+      active = false
+      if (reconnectTimeout !== null) clearTimeout(reconnectTimeout)
+      if (currentSocket) {
+        currentSocket.close()
+        if (chatSocketRef.current === currentSocket) chatSocketRef.current = null
+      }
     }
   }, [playerId, roomState?.roomId])
 
