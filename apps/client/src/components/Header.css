@@ -4,9 +4,8 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 1px solid #2f3a4a;
-  background: #070d16cc;
-  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #2a2218;
+  background: var(--color-header-bg);
 }
 
 .siteHeaderInner {
@@ -23,8 +22,8 @@
 .siteHeaderLogo {
   font-size: 1.3rem;
   font-weight: 800;
-  color: #56c5e8;
-  letter-spacing: 0.05em;
+  color: var(--color-header-text);
+  letter-spacing: 0.12em;
   user-select: none;
   background: none;
   border: none;
@@ -32,8 +31,9 @@
   font: inherit;
   font-size: 1.3rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
   cursor: default;
+  text-transform: uppercase;
 }
 
 .siteHeaderLogoClickable {
@@ -42,7 +42,7 @@
 }
 
 .siteHeaderLogoClickable:hover {
-  color: #8ed9f4;
+  color: #fff;
 }
 
 .siteHeaderNav {
@@ -69,25 +69,45 @@
 }
 
 .headerBtnGhost {
-  border: 1px solid #39475b;
+  border: 1px solid #5a4a36;
   background: transparent;
-  color: #b0c4d8;
+  color: #d4c5a5;
 }
 
 .headerBtnGhost:hover {
-  background: #182334;
-  border-color: #56c5e8;
-  color: #eaf2ff;
+  background: #4a3c28;
+  border-color: var(--color-accent);
+  color: #ffe8d4;
+}
+
+@media (max-width: 600px) {
+  .siteHeaderInner {
+    padding: 0 0.75rem;
+    height: 48px;
+  }
+
+  .siteHeaderLogo {
+    font-size: 1.05rem;
+  }
+
+  .headerBtn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  .siteHeaderNav {
+    gap: 0.3rem;
+  }
 }
 
 .headerBtnPrimary {
   border: 0;
-  background: #1f8fb3;
-  color: #f2fbff;
+  background: var(--color-accent);
+  color: #fff;
 }
 
 .headerBtnPrimary:hover {
-  background: #187392;
+  background: var(--color-accent-hover);
 }
 
 /* ── User Menu ───────────────────────────────────────────── */
@@ -101,11 +121,11 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.3rem 0.6rem 0.3rem 0.3rem;
-  border: 1px solid #39475b;
+  border: 1px solid #5a4a36;
   border-radius: 24px;
   background: transparent;
   cursor: pointer;
-  color: #d9e3f1;
+  color: #d4c5a5;
   font: inherit;
   font-size: 0.9rem;
   transition: border-color 0.15s, background 0.15s;
@@ -113,8 +133,8 @@
 
 .avatarButton:hover,
 .avatarButton[aria-expanded='true'] {
-  border-color: #56c5e8;
-  background: #182334;
+  border-color: var(--color-accent);
+  background: #4a3c28;
 }
 
 .avatarImg {
@@ -129,12 +149,12 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #1f8fb3;
+  background: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #f2fbff;
+  color: #fff;
 }
 
 .avatarDefault svg {
@@ -164,9 +184,9 @@
   right: 0;
   min-width: 200px;
   border-radius: 10px;
-  border: 1px solid #2f3a4a;
-  background: #0f1c2d;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  box-shadow: 0 8px 28px rgba(58, 46, 28, 0.18);
   overflow: hidden;
   z-index: 200;
 }
@@ -179,7 +199,7 @@
   padding: 0.7rem 1rem;
   border: 0;
   background: transparent;
-  color: #d9e3f1;
+  color: var(--color-text);
   font: inherit;
   font-size: 0.9rem;
   text-align: left;
@@ -188,14 +208,14 @@
 }
 
 .dropdownItem:hover {
-  background: #182334;
+  background: rgba(58, 46, 28, 0.06);
 }
 
 .dropdownItem svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  opacity: 0.75;
+  opacity: 0.6;
 }
 
 .friendsBadge {
@@ -204,7 +224,7 @@
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: #e05555;
+  background: var(--color-accent);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -214,14 +234,14 @@
 
 .dropdownDivider {
   height: 1px;
-  background: #2f3a4a;
+  background: var(--color-surface-border);
   margin: 0.25rem 0;
 }
 
 .dropdownItemDanger {
-  color: #e07070;
+  color: var(--color-accent);
 }
 
 .dropdownItemDanger:hover {
-  background: #2a1818;
+  background: rgba(196, 64, 64, 0.06);
 }

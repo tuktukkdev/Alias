@@ -8,7 +8,7 @@
 
 .profileCurrentName {
   margin: 0;
-  color: #7a94ae;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
@@ -19,7 +19,7 @@
 
 .profileDivider {
   border: none;
-  border-top: 1px solid #2f3a4a;
+  border-top: 1px solid var(--color-surface-border);
   margin: 0.25rem 0;
 }
 
@@ -33,18 +33,18 @@
   height: 96px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #2f3a4a;
+  border: 2px solid var(--color-surface-border);
 }
 
 .avatarPreviewDefault {
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  background: #1f8fb3;
+  background: var(--color-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f2fbff;
+  color: #fff;
 }
 
 .avatarPreviewDefault svg {
@@ -62,9 +62,9 @@
 .emailBadgeVerified {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #6ecf8e;
-  background: rgba(110, 207, 142, 0.12);
-  border: 1px solid rgba(110, 207, 142, 0.35);
+  color: var(--color-success);
+  background: rgba(74, 138, 58, 0.1);
+  border: 1px solid rgba(74, 138, 58, 0.3);
   border-radius: 20px;
   padding: 0.15rem 0.6rem;
   white-space: nowrap;
@@ -73,9 +73,9 @@
 .emailBadgeUnverified {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #e07070;
-  background: rgba(224, 112, 112, 0.12);
-  border: 1px solid rgba(224, 112, 112, 0.35);
+  color: var(--color-error);
+  background: rgba(196, 64, 64, 0.08);
+  border: 1px solid rgba(196, 64, 64, 0.25);
   border-radius: 20px;
   padding: 0.15rem 0.6rem;
   white-space: nowrap;
@@ -88,10 +88,10 @@
 
 .deleteAvatarButton {
   padding: 0.55rem 1rem;
-  border: 1px solid #6e3d3d;
+  border: 1px solid rgba(196, 64, 64, 0.4);
   border-radius: 8px;
   background: transparent;
-  color: #e07070;
+  color: var(--color-error);
   font: inherit;
   font-size: 0.88rem;
   cursor: pointer;
@@ -99,8 +99,7 @@
 }
 
 .deleteAvatarButton:hover:not(:disabled) {
-  background: #602f2f;
-  color: #ffe8e8;
+  background: rgba(196, 64, 64, 0.08);
 }
 
 .deleteAvatarButton:disabled {

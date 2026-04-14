@@ -20,7 +20,7 @@
   padding: 0 5px;
   margin-left: 0.5rem;
   border-radius: 10px;
-  background: #e05555;
+  background: var(--color-accent);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -41,14 +41,14 @@
   justify-content: space-between;
   padding: 0.55rem 0.75rem;
   border-radius: 10px;
-  background: #182334;
+  background: var(--color-bg-light);
   gap: 0.5rem;
 }
 
 .friendsName {
   flex: 1;
   font-weight: 600;
-  color: #d9e3f1;
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -61,64 +61,64 @@
 }
 
 .friendsAcceptBtn {
-  border: 1px solid #2a6e4a;
+  border: 1px solid rgba(74, 138, 58, 0.4);
   border-radius: 8px;
   padding: 0.3rem 0.7rem;
-  background: #1a4a35;
-  color: #7ee8a2;
+  background: rgba(74, 138, 58, 0.08);
+  color: var(--color-success);
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
 }
 
 .friendsAcceptBtn:hover {
-  background: #235c43;
+  background: rgba(74, 138, 58, 0.15);
 }
 
 .friendsDeclineBtn {
-  border: 1px solid #4e2a2a;
+  border: 1px solid rgba(196, 64, 64, 0.3);
   border-radius: 8px;
   padding: 0.3rem 0.7rem;
   background: transparent;
-  color: #e07070;
+  color: var(--color-error);
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
 }
 
 .friendsDeclineBtn:hover {
-  background: rgba(224, 112, 112, 0.1);
+  background: rgba(196, 64, 64, 0.06);
 }
 
 .friendsRemoveBtn {
-  border: 1px solid #2f3a4a;
+  border: 1px solid var(--color-surface-border);
   border-radius: 8px;
   padding: 0.3rem 0.7rem;
   background: transparent;
-  color: #7a94ae;
+  color: var(--color-text-muted);
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
 }
 
 .friendsRemoveBtn:hover {
-  background: #182334;
-  color: #d9e3f1;
+  background: rgba(58, 46, 28, 0.06);
+  color: var(--color-text);
 }
 
 .friendsJoinBtn {
-  border: 1px solid #1a5a7a;
+  border: 1px solid rgba(196, 64, 64, 0.3);
   border-radius: 8px;
   padding: 0.3rem 0.7rem;
-  background: #0f3a52;
-  color: #56c5e8;
+  background: rgba(196, 64, 64, 0.06);
+  color: var(--color-accent);
   font: inherit;
   font-size: 0.82rem;
   cursor: pointer;
 }
 
 .friendsJoinBtn:hover:not(:disabled) {
-  background: #1a4f6e;
+  background: rgba(196, 64, 64, 0.12);
 }
 
 .friendsJoinBtn:disabled {
@@ -128,7 +128,7 @@
 
 .friendsJoinHint {
   font-size: 0.78rem;
-  color: #e07070;
+  color: var(--color-error);
   white-space: nowrap;
 }
 

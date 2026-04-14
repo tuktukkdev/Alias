@@ -26,10 +26,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #2f3a4a;
+  border: 1px solid var(--color-surface-border);
   border-radius: 7px;
-  background: #182334;
-  color: #7eb3e8;
+  background: var(--color-bg-light);
+  color: var(--color-text-muted);
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 700;
@@ -37,8 +37,8 @@
 }
 
 .copyBtn:hover {
-  background: #223249;
-  color: #aecff5;
+  background: var(--color-bg);
+  color: var(--color-accent);
 }
 
 .timerRow {
@@ -64,22 +64,22 @@
   align-items: center;
   padding: 0.55rem 0.7rem;
   border-radius: 8px;
-  background: #19273a;
-  color: #e9f2ff;
+  background: var(--color-bg-light);
+  color: var(--color-text);
 }
 
 .startedText {
   margin: 0;
-  color: #8de3b4;
+  color: var(--color-success);
   font-weight: 700;
 }
 
 .collectionsPickerBtn {
   padding: 0.55rem 1rem;
-  border: 2px solid #4f8cff;
+  border: 2px solid var(--color-accent);
   border-radius: 8px;
   background: transparent;
-  color: #4f8cff;
+  color: var(--color-accent);
   font-weight: 600;
   cursor: pointer;
   font-size: 0.95rem;
@@ -87,6 +87,6 @@
 }
 
 .collectionsPickerBtn:hover {
-  background: #4f8cff;
+  background: var(--color-accent);
   color: #fff;
 }

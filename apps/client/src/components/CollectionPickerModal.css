@@ -3,7 +3,7 @@
 .pickerOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(58, 46, 28, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,7 +11,7 @@
 }
 
 .pickerPanel {
-  background: #101c2e;
+  background: var(--color-surface);
   border-radius: 14px;
   padding: 1.5rem;
   width: min(500px, 92vw);
@@ -19,8 +19,8 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  color: #e9f2ff;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  color: var(--color-text);
+  box-shadow: 0 8px 32px rgba(58, 46, 28, 0.2);
 }
 
 .pickerTitle {
@@ -32,16 +32,16 @@
   width: 100%;
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
-  border: 1px solid #2d4a6a;
-  background: #0d1827;
-  color: #e9f2ff;
+  border: 1px solid var(--color-input-border);
+  background: var(--color-input-bg);
+  color: var(--color-text);
   font-size: 0.9rem;
   box-sizing: border-box;
   outline: none;
 }
 
 .pickerSearch:focus {
-  border-color: #4f8cff;
+  border-color: var(--color-accent);
 }
 
 .pickerSection {
@@ -53,7 +53,7 @@
 .pickerSectionTitle {
   margin: 0;
   font-size: 0.95rem;
-  color: #88b4e7;
+  color: var(--color-text-muted);
   font-weight: 600;
 }
 
@@ -74,17 +74,17 @@
   gap: 0.6rem;
   padding: 0.5rem 0.65rem;
   border-radius: 8px;
-  background: #19273a;
+  background: var(--color-bg-light);
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .pickerItem:hover {
-  background: #1e3050;
+  background: var(--color-bg);
 }
 
 .pickerItem input[type='checkbox'] {
-  accent-color: #4f8cff;
+  accent-color: var(--color-accent);
   width: 18px;
   height: 18px;
   flex-shrink: 0;
@@ -106,15 +106,15 @@
 
 .pickerItemMeta {
   font-size: 0.8rem;
-  color: #7da8d4;
+  color: var(--color-text-muted);
 }
 
 .pickerWarning {
   margin: 0;
   padding: 0.55rem 0.7rem;
   border-radius: 8px;
-  background: #3a2a10;
-  color: #ffd666;
+  background: rgba(212, 160, 23, 0.1);
+  color: #b58a14;
   font-size: 0.85rem;
 }
 
@@ -134,25 +134,25 @@
 }
 
 .pickerBtnCancel {
-  background: #263549;
-  color: #b5cde8;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
 }
 
 .pickerBtnCancel:hover {
-  background: #324563;
+  background: var(--color-surface-border);
 }
 
 .pickerBtnConfirm {
-  background: #4f8cff;
+  background: var(--color-accent);
   color: #fff;
 }
 
 .pickerBtnConfirm:hover {
-  background: #3d73db;
+  background: var(--color-accent-hover);
 }
 
 .pickerEmpty {
-  color: #7da8d4;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   padding: 0.3rem 0;
 }

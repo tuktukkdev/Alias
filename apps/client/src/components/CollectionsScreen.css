@@ -11,8 +11,8 @@
 .collectionsPanel {
   width: 100%;
   max-width: 720px;
-  background: #0d2233;
-  border: 1px solid #1e3a52;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
   border-radius: 10px;
   padding: 1.75rem 2rem;
   display: flex;
@@ -29,7 +29,7 @@
 .collectionsBackBtn {
   background: none;
   border: none;
-  color: #56c5e8;
+  color: var(--color-accent);
   font-size: 0.95rem;
   cursor: pointer;
   padding: 0;
@@ -37,28 +37,28 @@
 }
 
 .collectionsBackBtn:hover {
-  color: #8ed9f4;
+  color: var(--color-accent-hover);
 }
 
 .collectionsPanelTitle {
   margin: 0;
   font-size: 1.3rem;
   font-weight: 600;
-  color: #e8f4f8;
+  color: var(--color-text);
 }
 
 .collectionsMsg {
   margin: 0;
-  color: #a0bfcc;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
 }
 
 .collectionsError {
-  color: #e87070;
+  color: var(--color-error);
 }
 
 .collectionsEmpty {
-  color: #6a9ab0;
+  color: var(--color-text-light);
   font-style: italic;
 }
 
@@ -75,9 +75,9 @@
 .collectionsTable th {
   text-align: left;
   padding: 0.5rem 0.75rem;
-  color: #7aafcc;
+  color: var(--color-text-muted);
   font-weight: 600;
-  border-bottom: 1px solid #1e3a52;
+  border-bottom: 1px solid var(--color-surface-border);
   white-space: nowrap;
 }
 
@@ -91,13 +91,13 @@
 }
 
 .collectionsTableRow:hover {
-  background: #112d42;
+  background: rgba(58, 46, 28, 0.04);
 }
 
 .collectionsTable td {
   padding: 0.6rem 0.75rem;
-  color: #d0e8f2;
-  border-bottom: 1px solid #162b3e;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-surface-border);
   vertical-align: middle;
 }
 
@@ -111,7 +111,7 @@
 
 .collectionsTableDesc {
   max-width: 260px;
-  color: #8aabbc;
+  color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -125,7 +125,7 @@
 .collectionsDeleteBtn {
   background: none;
   border: none;
-  color: #8aabbc;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   cursor: pointer;
   padding: 0.25rem 0.4rem;
@@ -134,14 +134,14 @@
 }
 
 .collectionsDeleteBtn:hover {
-  background: #1e3a52;
-  color: #e87070;
+  background: rgba(196, 64, 64, 0.06);
+  color: var(--color-error);
 }
 
 /* ── Create Form ─────────────────────────────────────────── */
 
 .collectionsCreateSection {
-  border-top: 1px solid #1e3a52;
+  border-top: 1px solid var(--color-surface-border);
   padding-top: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -152,7 +152,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #a0d4e8;
+  color: var(--color-text);
 }
 
 .collectionsCreateForm {
@@ -176,7 +176,7 @@
 .collectionsLabel {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #7aafcc;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -185,28 +185,28 @@
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
-  color: #5a8fa6;
+  color: var(--color-text-light);
 }
 
 .collectionsInput {
-  background: #0a1d2e;
-  border: 1px solid #1e3a52;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
   border-radius: 6px;
-  color: #e8f4f8;
+  color: var(--color-text);
   font-size: 0.9rem;
   padding: 0.5rem 0.7rem;
   outline: none;
 }
 
 .collectionsInput:focus {
-  border-color: #56c5e8;
+  border-color: var(--color-accent);
 }
 
 .collectionsInputSmall {
-  background: #0a1d2e;
-  border: 1px solid #1e3a52;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
   border-radius: 6px;
-  color: #e8f4f8;
+  color: var(--color-text);
   font-size: 0.9rem;
   padding: 0.5rem 0.7rem;
   outline: none;
@@ -214,13 +214,13 @@
 }
 
 .collectionsInputSmall:focus {
-  border-color: #56c5e8;
+  border-color: var(--color-accent);
 }
 
 .collectionsFormError {
   margin: 0;
   font-size: 0.85rem;
-  color: #e87070;
+  color: var(--color-error);
 }
 
 .collectionsBtn {
@@ -239,34 +239,34 @@
 }
 
 .collectionsBtnPrimary {
-  background: #0f3a52;
-  color: #56c5e8;
-  border: 1px solid #1e5a7a;
+  background: var(--color-accent);
+  color: #fff;
+  border: 1px solid var(--color-accent);
 }
 
 .collectionsBtnPrimary:hover:not(:disabled) {
-  background: #164d6b;
+  background: var(--color-accent-hover);
 }
 
 /* ── Word Editor ─────────────────────────────────────────── */
 
 .collectionsWordEditorDesc {
   margin: 0;
-  color: #8aabbc;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
 .collectionsWordEditorMeta {
   margin: 0;
   font-size: 0.88rem;
-  color: #7aafcc;
+  color: var(--color-text-muted);
 }
 
 .collectionsWordArea {
-  background: #0a1d2e;
-  border: 1px solid #1e3a52;
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
   border-radius: 6px;
-  color: #e8f4f8;
+  color: var(--color-text);
   font-size: 0.9rem;
   font-family: monospace;
   padding: 0.6rem 0.75rem;
@@ -276,7 +276,7 @@
 }
 
 .collectionsWordArea:focus {
-  border-color: #56c5e8;
+  border-color: var(--color-accent);
 }
 
 .collectionsWordEditorActions {
@@ -287,9 +287,9 @@
 
 .collectionsWordsSaveMsg {
   font-size: 0.85rem;
-  color: #56c5e8;
+  color: var(--color-success);
 }
 
 .collectionsWordsSaveMsgError {
-  color: #e87070;
+  color: var(--color-error);
 }

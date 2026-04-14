@@ -1,0 +1,78 @@
+/* ── Info Pages (How to Play, Terms of Service) ──────────── */
+
+.infoScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1.5rem 3rem;
+}
+
+.infoHero {
+  width: min(720px, 100%);
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.infoPanel {
+  width: min(720px, 100%);
+  display: grid;
+  gap: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.infoSection {
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.infoSection:last-child {
+  margin-bottom: 0;
+}
+
+.infoHeading {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.infoContent {
+  line-height: 1.7;
+  color: var(--color-text);
+}
+
+.infoContent p {
+  margin: 0 0 0.6rem;
+}
+
+.infoContent p:last-child {
+  margin-bottom: 0;
+}
+
+.infoContent ul,
+.infoContent ol {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.infoContent li {
+  margin-bottom: 0.3rem;
+}
+
+.infoMeta {
+  margin: 0 0 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}

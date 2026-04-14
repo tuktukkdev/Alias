@@ -2,17 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import './styles/common.css'
 import { ROOM_PATH_PREFIX, WS_BASE } from './config/client'
+import desktopBck from './assets/desktop_bck.svg'
+import mobileBck from './assets/mobile_bck.svg'
 import { AuthModal } from './components/AuthModal'
 import CollectionsScreen from './components/CollectionsScreen'
 import { CollectionPickerModal } from './components/CollectionPickerModal'
+import { Footer } from './components/Footer'
 import { FriendsScreen } from './components/FriendsScreen'
 import { GameScreen } from './components/GameScreen'
 import { Header } from './components/Header'
+import { HowToPlayScreen } from './components/HowToPlayScreen'
 import { JoinScreen } from './components/JoinScreen'
 import { ProfileScreen } from './components/ProfileScreen'
 import { ResetPasswordModal } from './components/ResetPasswordModal'
 import { RoomScreen } from './components/RoomScreen'
 import { StatsModal } from './components/StatsModal'
+import { TermsScreen } from './components/TermsScreen'
 import { useAuth } from './hooks/useAuth'
 import { useVoiceChat } from './hooks/useVoiceChat'
 import {
@@ -51,7 +56,7 @@ import {
 
 function App() {
   /* ── Navigation ──────────────────────────────────────── */
-  const [page, setPage] = useState<'main' | 'profile' | 'friends' | 'collections'>('main')
+  const [page, setPage] = useState<'main' | 'profile' | 'friends' | 'collections' | 'howtoplay' | 'terms'>('main')
   const [showStats, setShowStats] = useState(false)
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0)
 
@@ -542,6 +547,10 @@ function App() {
       />
     ) : page === 'collections' && authUser ? (
       <CollectionsScreen user={authUser} onBack={() => setPage('main')} />
+    ) : page === 'howtoplay' ? (
+      <HowToPlayScreen onBack={() => setPage('main')} />
+    ) : page === 'terms' ? (
+      <TermsScreen onBack={() => setPage('main')} />
     ) : roomState?.started ? (
       <GameScreen
         roomState={roomState}
@@ -591,7 +600,12 @@ function App() {
     )
 
   return (
-    <div className="appLayout">
+    <>
+      <div className="bgLayer" aria-hidden="true">
+        <img className="bgImg bgImgDesktop" src={desktopBck} alt="" />
+        <img className="bgImg bgImgMobile" src={mobileBck} alt="" />
+      </div>
+      <div className="appLayout">
       <Header
         user={authUser}
         pendingFriendRequests={pendingFriendRequests}
@@ -602,6 +616,7 @@ function App() {
         onLogoClick={!roomState ? () => setPage('main') : undefined}
       />
       {screenContent}
+      <Footer onNavigate={(p) => setPage(p)} />
       {showStats && authUser && (
         <StatsModal user={authUser} onClose={() => setShowStats(false)} />
       )}
@@ -630,7 +645,8 @@ function App() {
           onSubmit={(newPassword) => handleResetPassword(newPassword)}
         />
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

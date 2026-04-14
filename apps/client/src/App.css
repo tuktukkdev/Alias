@@ -1,5 +1,32 @@
+.bgLayer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.bgImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.bgImgMobile {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .bgImgDesktop { display: none; }
+  .bgImgMobile  { display: block; }
+}
+
 .appLayout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }

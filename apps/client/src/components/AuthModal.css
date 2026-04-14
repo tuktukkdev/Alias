@@ -2,15 +2,15 @@
 
 .authDialog {
   padding: 0;
-  border: 1px solid #2f3a4a;
+  border: 1px solid var(--color-surface-border);
   border-radius: 16px;
-  background: #101925;
-  color: #e6eefc;
+  background: var(--color-surface);
+  color: var(--color-text);
   width: min(420px, calc(100vw - 2rem));
 }
 
 .authDialog::backdrop {
-  background: rgba(0, 0, 0, 0.72);
+  background: rgba(58, 46, 28, 0.5);
   backdrop-filter: blur(3px);
 }
 
@@ -19,13 +19,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.9rem 1.25rem;
-  border-bottom: 1px solid #2f3a4a;
+  border-bottom: 1px solid var(--color-surface-border);
 }
 
 .authTabs {
   display: flex;
   gap: 0.2rem;
-  background: #182334;
+  background: var(--color-bg);
   border-radius: 8px;
   padding: 0.2rem;
 }
@@ -35,7 +35,7 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #7a94ae;
+  color: var(--color-text-muted);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
@@ -44,8 +44,8 @@
 }
 
 .authTabActive {
-  background: #1f8fb3;
-  color: #f2fbff;
+  background: var(--color-accent);
+  color: #fff;
 }
 
 .authDialogClose {
@@ -54,7 +54,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #7a94ae;
+  color: var(--color-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -64,8 +64,8 @@
 }
 
 .authDialogClose:hover {
-  background: #182334;
-  color: #d9e3f1;
+  background: rgba(58, 46, 28, 0.06);
+  color: var(--color-text);
 }
 
 .authDialogClose svg {
@@ -81,13 +81,13 @@
 
 .authError {
   margin: 0;
-  color: #e07070;
+  color: var(--color-error);
   font-size: 0.85rem;
 }
 
 .authSuccess {
   margin: 0;
-  color: #6ecf8e;
+  color: var(--color-success);
   font-size: 0.9rem;
   line-height: 1.5;
 }
@@ -95,7 +95,7 @@
 .authForgotLink {
   background: none;
   border: none;
-  color: #7eb3e8;
+  color: var(--color-accent);
   font-size: 0.82rem;
   cursor: pointer;
   padding: 0;
@@ -104,10 +104,10 @@
 }
 
 .authForgotLink:hover {
-  color: #aecff5;
+  color: var(--color-accent-hover);
 }
 
 .requiredMark {
-  color: #e07070;
+  color: var(--color-error);
   font-weight: 700;
 }

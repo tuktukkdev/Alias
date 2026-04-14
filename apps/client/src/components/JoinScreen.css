@@ -1,10 +1,37 @@
 /* ── Join Screen ─────────────────────────────────────────── */
 
+.joinPanel {
+  text-align: center;
+}
+
+.joinHero {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.joinTitle {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--color-text);
+}
+
+.joinSubtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.joinPanel .label {
+  text-align: left;
+}
+
 .inputLocked {
-  color: #7a94ae;
+  color: var(--color-text-muted);
   cursor: default;
-  border-color: #2a3a4e;
-  background: #111e2d;
+  border-color: var(--color-surface-border);
+  background: var(--color-bg-light);
 }
 
 .inputLocked:focus {
@@ -12,21 +39,32 @@
 }
 
 .createRoomButton {
-  border: 1px solid #39597a;
+  border: 1px solid var(--color-surface-border);
   border-radius: 10px;
   padding: 0.75rem 1rem;
-  background: #13243a;
-  color: #d9e9ff;
+  background: var(--color-bg-light);
+  color: var(--color-text);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
 }
 
 .createRoomButton:hover {
-  background: #1a3351;
+  background: var(--color-bg);
+  border-color: var(--color-accent);
 }
 
 .createRoomButton:focus-visible {
-  outline: 2px solid #56c5e8;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .joinTitle {
+    font-size: 1.8rem;
+  }
+
+  .joinSubtitle {
+    font-size: 0.85rem;
+  }
 }

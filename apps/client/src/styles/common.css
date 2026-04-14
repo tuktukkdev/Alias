@@ -1,10 +1,11 @@
 /* ── Shared / Common ─────────────────────────────────────── */
 
 .screen {
-  min-height: calc(100vh - 56px);
+  flex: 1;
   display: grid;
   place-items: center;
   padding: 1.5rem;
+  position: relative;
 }
 
 .panel {
@@ -13,91 +14,91 @@
   gap: 0.85rem;
   padding: 1.25rem;
   border-radius: 16px;
-  border: 1px solid #2f3a4a;
-  background: #101925cc;
-  backdrop-filter: blur(4px);
+  border: 1px solid var(--color-surface-border);
+  background: var(--color-surface);
+  box-shadow: 0 2px 12px rgba(58, 46, 28, 0.08);
 }
 
 .label {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #d9e3f1;
+  color: var(--color-text);
 }
 
 .input {
   width: 100%;
   padding: 0.75rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid #39475b;
-  background: #182334;
+  border: 1px solid var(--color-input-border);
+  background: var(--color-input-bg);
   font: inherit;
-  color: #eaf2ff;
+  color: var(--color-text);
 }
 
 .input:focus {
-  outline: 2px solid #32b0d5;
+  outline: 2px solid var(--color-input-focus);
   outline-offset: 1px;
 }
 
 .inputInvalid {
-  border-color: #e07070;
-  background: #2a1a1a;
+  border-color: var(--color-error);
+  background: #fff0f0;
 }
 
 .inputInvalid:focus {
-  outline-color: #e07070;
+  outline-color: var(--color-error);
 }
 
 .playButton {
   border: 0;
   border-radius: 10px;
   padding: 0.75rem 1rem;
-  background: #1f8fb3;
-  color: #f2fbff;
+  background: var(--color-accent);
+  color: var(--color-accent-text);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
 }
 
 .playButton:hover {
-  background: #187392;
+  background: var(--color-accent-hover);
 }
 
 .playButton:disabled {
-  background: #355664;
+  background: #b89a7a;
   cursor: not-allowed;
   opacity: 0.75;
 }
 
 .playButton:focus-visible {
-  outline: 2px solid #56c5e8;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
 .title {
   margin: 0;
   font-size: 1.15rem;
-  color: #f0f6ff;
+  color: var(--color-text);
 }
 
 .sectionTitle {
   margin: 0 0 0.5rem;
   font-size: 1rem;
-  color: #d9e3f1;
+  color: var(--color-text);
 }
 
 .hintText {
   margin: 0;
-  color: #99afcb;
+  color: var(--color-text-muted);
   font-size: 0.92rem;
 }
 
 .backButton {
-  border: 1px solid #2f3a4a;
+  border: 1px solid var(--color-surface-border);
   border-radius: 8px;
   padding: 0.4rem 0.8rem;
   background: transparent;
-  color: #7a94ae;
+  color: var(--color-text-muted);
   font: inherit;
   font-size: 0.875rem;
   cursor: pointer;
@@ -105,17 +106,17 @@
 }
 
 .backButton:hover {
-  background: #182334;
-  color: #d9e3f1;
+  background: rgba(58, 46, 28, 0.06);
+  color: var(--color-text);
 }
 
 .exitButton {
   margin-top: 0.75rem;
-  border: 1px solid #6e3030;
+  border: 1px solid var(--color-accent);
   border-radius: 10px;
   padding: 0.55rem 1rem;
   background: transparent;
-  color: #f87171;
+  color: var(--color-accent);
   font: inherit;
   font-size: 0.875rem;
   cursor: pointer;
@@ -123,11 +124,11 @@
 }
 
 .exitButton:hover {
-  background: rgba(248, 113, 113, 0.12);
+  background: rgba(196, 64, 64, 0.08);
 }
 
 .exitButton:focus-visible {
-  outline: 2px solid #f87171;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
@@ -145,18 +146,28 @@
 
 .formError {
   margin: 0;
-  color: #e07070;
+  color: var(--color-error);
   font-size: 0.85rem;
 }
 
 .formSuccess {
   margin: 0;
-  color: #6dd89a;
+  color: var(--color-success);
   font-size: 0.85rem;
 }
 
 @media (max-width: 460px) {
   .actions {
     grid-template-columns: 1fr;
+  }
+
+  .screen {
+    padding: 1rem 0.75rem;
+    min-height: calc(100vh - 56px - 70px);
+  }
+
+  .panel {
+    padding: 1rem;
+    border-radius: 12px;
   }
 }

@@ -24,12 +24,16 @@ export function JoinScreen({
   return (
     <main className="screen">
       <form
-        className="panel"
+        className="panel joinPanel"
         onSubmit={(event) => {
           event.preventDefault()
           onJoin()
         }}
       >
+        <div className="joinHero">
+          <h1 className="joinTitle">ALIAS</h1>
+          <p className="joinSubtitle">Will your team understand you at a glance? Prove it!</p>
+        </div>
         <label htmlFor="name" className="label">
           Name
         </label>

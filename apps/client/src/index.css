@@ -2,11 +2,33 @@
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   line-height: 1.4;
   font-weight: 400;
-  color: #e6eefc;
+  color: #3a2e1c;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Design tokens - warm palette */
+  --color-bg: #fdf5e4;
+  --color-bg-light: #fdf9f0;
+  --color-surface: #fffcf5;
+  --color-surface-border: #e8d9bb;
+  --color-header-bg: #3a2e1c;
+  --color-header-text: #f5e6c8;
+  --color-text: #3a2e1c;
+  --color-text-muted: #7a6b52;
+  --color-text-light: #998866;
+  --color-accent: #c44040;
+  --color-accent-hover: #a83333;
+  --color-accent-text: #fff;
+  --color-link: #c44040;
+  --color-input-bg: #fff;
+  --color-input-border: #d4c5a5;
+  --color-input-focus: #c44040;
+  --color-success: #4a8a3a;
+  --color-error: #c44040;
+  --color-footer-bg: #f5ead0;
+  --color-footer-text: #7a6b52;
 }
 
 * {
@@ -17,7 +39,5 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: radial-gradient(circle at 15% 20%, #17345a 0%, #17345a 18%, transparent 46%),
-    radial-gradient(circle at 85% 80%, #3b1f56 0%, #3b1f56 16%, transparent 44%),
-    #070d16;
+  background: var(--color-bg);
 }
