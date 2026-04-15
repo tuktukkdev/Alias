@@ -13,6 +13,8 @@ apps/*/dist/
 apps/*/dist-ssr/
 
 # Environment files
+.env
+apps/.env
 apps/*/.env
 
 # Generated artifacts

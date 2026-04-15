@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_DB: alias
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: prodpassword32
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +24,7 @@ services:
     expose:
       - "3000"
     environment:
-      DATABASE_URL: postgresql://postgres:prodpassword32@postgres:5432/alias
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/alias
       REDIS_URL: redis://redis:6379
       FRONTEND_URL: https://bluefieldapps.com
       SERVER_BASE_URL: https://bluefieldapps.com
