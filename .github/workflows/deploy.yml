@@ -12,6 +12,10 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         with:
           host: 92.255.79.21
           username: root
@@ -19,7 +23,8 @@ jobs:
           envs: POSTGRES_PASSWORD,RESEND_API_KEY,EMAIL_FROM
           script: |
             cd ~/Alias/apps
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             # Write .env from CI secrets (idempotent — recreates it every deploy)
             printf 'POSTGRES_PASSWORD=%s\nRESEND_API_KEY=%s\nEMAIL_FROM=%s\n' \
               "$POSTGRES_PASSWORD" "$RESEND_API_KEY" "$EMAIL_FROM" > .env
