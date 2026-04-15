@@ -16,9 +16,16 @@ jobs:
           host: 92.255.79.21
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: POSTGRES_PASSWORD,RESEND_API_KEY,EMAIL_FROM
           script: |
             cd ~/Alias/apps
             git pull origin main
+            # Write .env from CI secrets (idempotent — recreates it every deploy)
+            cat > .env <<EOF
+            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+            RESEND_API_KEY=$RESEND_API_KEY
+            EMAIL_FROM=$EMAIL_FROM
+            EOF
             # Rebuild and restart only app containers.
             # postgres and redis keep running — volumes (pgdata, uploads) are untouched.
             docker compose up -d --build server client
