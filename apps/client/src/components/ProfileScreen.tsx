@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { API_BASE } from '../config/client'
 import { fetchEmailVerifiedRequest, resendVerificationRequest } from '../services/authApi'
 import type { AuthUser } from '../types/auth'
+import { ts } from '../i18n'
 import './ProfileScreen.css'
 
 interface ProfileScreenProps {
@@ -49,11 +50,11 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     e.preventDefault()
     const trimmed = newUsername.trim()
     if (!trimmed) {
-      setUsernameError('Enter a new username.')
+      setUsernameError(ts('profile.enterNewUsername'))
       return
     }
     if (trimmed === user.name) {
-      setUsernameError('New username is the same as current.')
+      setUsernameError(ts('profile.sameUsername'))
       return
     }
     setUsernameLoading(true)
@@ -67,14 +68,14 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
       })
       const data = (await res.json()) as { username?: string; error?: string }
       if (!res.ok) {
-        setUsernameError(data.error ?? 'Failed to update username.')
+        setUsernameError(data.error ?? ts('profile.usernameFailed'))
         return
       }
-      setUsernameSuccess('Username updated.')
+      setUsernameSuccess(ts('profile.usernameUpdated'))
       setNewUsername('')
       onUsernameChanged(data.username ?? trimmed)
     } catch {
-      setUsernameError('Could not reach the server.')
+      setUsernameError(ts('profile.serverError'))
     } finally {
       setUsernameLoading(false)
     }
@@ -84,11 +85,11 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     const file = e.target.files?.[0]
     if (!file) return
     if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-      setAvatarError('Please select a JPEG, PNG, GIF or WebP image.')
+      setAvatarError(ts('profile.invalidImageType'))
       return
     }
     if (file.size > 2 * 1024 * 1024) {
-      setAvatarError('Image must be 2 MB or smaller.')
+      setAvatarError(ts('profile.imageTooLarge'))
       return
     }
     setAvatarError('')
@@ -102,7 +103,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
   const handleAvatarUpload = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!avatarPreview || !avatarFile) {
-      setAvatarError('Please select an image first.')
+      setAvatarError(ts('profile.selectImageFirst'))
       return
     }
     setAvatarLoading(true)
@@ -116,23 +117,23 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
       })
       const data = (await res.json()) as { avatarUrl?: string; error?: string }
       if (!res.ok) {
-        setAvatarError(data.error ?? 'Failed to upload picture.')
+        setAvatarError(data.error ?? ts('profile.uploadFailed'))
         return
       }
-      setAvatarSuccess('Profile picture updated.')
+      setAvatarSuccess(ts('profile.pictureUpdated'))
       setAvatarPreview(null)
       setAvatarFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
       onAvatarChanged(data.avatarUrl ?? '')
     } catch {
-      setAvatarError('Could not reach the server.')
+      setAvatarError(ts('profile.serverError'))
     } finally {
       setAvatarLoading(false)
     }
   }
 
   const handleDeleteAvatar = async () => {
-    if (!window.confirm('Remove your profile picture?')) return
+    if (!window.confirm(ts('profile.confirmDeletePicture'))) return
     setDeleteAvatarLoading(true)
     setAvatarError('')
     setAvatarSuccess('')
@@ -144,13 +145,13 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
       })
       if (!res.ok) {
         const data = (await res.json()) as { error?: string }
-        setAvatarError(data.error ?? 'Failed to delete picture.')
+        setAvatarError(data.error ?? ts('profile.deleteFailed'))
         return
       }
-      setAvatarSuccess('Profile picture removed.')
+      setAvatarSuccess(ts('profile.pictureRemoved'))
       onAvatarChanged('')
     } catch {
-      setAvatarError('Could not reach the server.')
+      setAvatarError(ts('profile.serverError'))
     } finally {
       setDeleteAvatarLoading(false)
     }
@@ -159,11 +160,11 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentPassword) {
-      setPasswordError('New password must be at least 6 characters.')
+      setPasswordError(ts('profile.passwordMinLength'))
       return
     }
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match.')
+      setPasswordError(ts('profile.passwordsMismatch'))
       return
     }
     setPasswordLoading(true)
@@ -177,15 +178,15 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
       })
       const data = (await res.json()) as { ok?: boolean; error?: string }
       if (!res.ok) {
-        setPasswordError(data.error ?? 'Failed to update password.')
+        setPasswordError(data.error ?? ts('profile.passwordFailed'))
         return
       }
-      setPasswordSuccess('Password updated.')
+      setPasswordSuccess(ts('profile.passwordUpdated'))
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch {
-      setPasswordError('Could not reach the server.')
+      setPasswordError(ts('profile.serverError'))
     } finally {
       setPasswordLoading(false)
     }
@@ -200,17 +201,17 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
       if (res.status === 409) {
         setEmailVerified(true)
         onEmailVerified()
-        setResendMessage('Your email is already verified.')
+        setResendMessage(ts('profile.alreadyVerified'))
         return
       }
       if (!res.ok) {
         const data = (await res.json()) as { error?: string }
-        setResendError(data.error ?? 'Failed to send verification email.')
+        setResendError(data.error ?? ts('profile.resendFailed'))
         return
       }
-      setResendMessage('Verification email sent! Check your inbox.')
+      setResendMessage(ts('profile.verificationSent'))
     } catch {
-      setResendError('Could not reach the server.')
+      setResendError(ts('profile.serverError'))
     } finally {
       setResendLoading(false)
     }
@@ -221,13 +222,13 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
       <section className="panel profilePanel">
         <div className="profileHeader">
           <button type="button" className="backButton" onClick={onBack}>
-            ← Back
+            {ts('profile.back')}
           </button>
-          <h1 className="title">Profile</h1>
+          <h1 className="title">{ts('profile.title')}</h1>
         </div>
 
         <p className="profileCurrentName">
-          Current username: <strong>{user.name}</strong>
+          {ts('profile.currentUsername')} <strong>{user.name}</strong>
         </p>
 
         {/* ── Email verification status ── */}
@@ -235,12 +236,12 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
           <>
             <div className="emailVerificationRow">
               <span className="profileCurrentName">
-                Email: <strong>{user.email}</strong>
+                {ts('profile.email')} <strong>{user.email}</strong>
               </span>
               {emailVerified ? (
-                <span className="emailBadgeVerified">✓ Verified</span>
+                <span className="emailBadgeVerified">{ts('profile.verified')}</span>
               ) : (
-                <span className="emailBadgeUnverified">✗ Not verified</span>
+                <span className="emailBadgeUnverified">{ts('profile.notVerified')}</span>
               )}
             </div>
             {!emailVerified && (
@@ -253,7 +254,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
                   onClick={() => void handleResendVerification()}
                   disabled={resendLoading}
                 >
-                  {resendLoading ? 'Sending…' : 'Resend verification email'}
+                  {resendLoading ? ts('auth.sending') : ts('profile.resendVerification')}
                 </button>
               </div>
             )}
@@ -263,13 +264,13 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
 
         {/* ── Profile picture ── */}
         <form className="profileForm" onSubmit={(e) => void handleAvatarUpload(e)}>
-          <h2 className="sectionTitle">Profile Picture</h2>
+          <h2 className="sectionTitle">{ts('profile.profilePicture')}</h2>
           <div className="avatarPreviewWrap">
             {(avatarPreview ?? user.avatarUrl) ? (
               <img
                 className="avatarPreviewImg"
                 src={avatarPreview ?? user.avatarUrl ?? ''}
-                alt="Profile preview"
+                alt={ts('profile.previewAlt')}
               />
             ) : (
               <span className="avatarPreviewDefault">
@@ -291,13 +292,13 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
             className="backButton"
             onClick={() => fileInputRef.current?.click()}
           >
-            Choose image…
+            {ts('profile.chooseImage')}
           </button>
           {avatarFile && <p className="profileCurrentName">{avatarFile.name}</p>}
           {avatarError && <p className="formError">{avatarError}</p>}
           {avatarSuccess && <p className="formSuccess">{avatarSuccess}</p>}
           <button type="submit" className="playButton" disabled={!avatarFile || avatarLoading}>
-            {avatarLoading ? 'Uploading…' : 'Upload Picture'}
+            {avatarLoading ? ts('profile.uploading') : ts('profile.uploadPicture')}
           </button>
           {(user.avatarUrl || avatarPreview) && (
             <button
@@ -306,7 +307,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
               onClick={() => void handleDeleteAvatar()}
               disabled={deleteAvatarLoading}
             >
-              {deleteAvatarLoading ? 'Removing…' : 'Delete Picture'}
+              {deleteAvatarLoading ? ts('profile.removing') : ts('profile.deletePicture')}
             </button>
           )}
         </form>
@@ -314,9 +315,9 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
         <hr className="profileDivider" />
 
         <form className="profileForm" onSubmit={(e) => void handleUsernameSubmit(e)}>
-          <h2 className="sectionTitle">Change Username</h2>
+          <h2 className="sectionTitle">{ts('profile.changeUsername')}</h2>
           <label className="label" htmlFor="newUsername">
-            New username
+            {ts('profile.newUsername')}
           </label>
           <input
             id="newUsername"
@@ -330,16 +331,16 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
           {usernameError && <p className="formError">{usernameError}</p>}
           {usernameSuccess && <p className="formSuccess">{usernameSuccess}</p>}
           <button type="submit" className="playButton" disabled={usernameLoading}>
-            {usernameLoading ? 'Saving…' : 'Update Username'}
+            {usernameLoading ? ts('profile.saving') : ts('profile.updateUsername')}
           </button>
         </form>
 
         <hr className="profileDivider" />
 
         <form className="profileForm" onSubmit={(e) => void handlePasswordSubmit(e)}>
-          <h2 className="sectionTitle">Change Password</h2>
+          <h2 className="sectionTitle">{ts('profile.changePassword')}</h2>
           <label className="label" htmlFor="currentPassword">
-            Current password
+            {ts('profile.currentPassword')}
           </label>
           <input
             id="currentPassword"
@@ -350,7 +351,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
             autoComplete="current-password"
           />
           <label className="label" htmlFor="newPassword">
-            New password
+            {ts('profile.newPassword')}
           </label>
           <input
             id="newPassword"
@@ -361,7 +362,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
             autoComplete="new-password"
           />
           <label className="label" htmlFor="confirmPassword">
-            Confirm new password
+            {ts('profile.confirmNewPassword')}
           </label>
           <input
             id="confirmPassword"
@@ -374,7 +375,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
           {passwordError && <p className="formError">{passwordError}</p>}
           {passwordSuccess && <p className="formSuccess">{passwordSuccess}</p>}
           <button type="submit" className="playButton" disabled={passwordLoading}>
-            {passwordLoading ? 'Saving…' : 'Update Password'}
+            {passwordLoading ? ts('profile.saving') : ts('profile.updatePassword')}
           </button>
         </form>
       </section>

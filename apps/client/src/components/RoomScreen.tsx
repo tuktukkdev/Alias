@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { RoomState } from '../types/game'
+import { ts } from '../i18n'
 import './RoomScreen.css'
 
 interface RoomScreenProps {
@@ -43,13 +44,13 @@ export function RoomScreen({
   return (
     <main className="screen">
       <section className="panel roomPanel">
-        <h1 className="title">Room {roomState.roomId}</h1>
+        <h1 className="title">{ts('room.title')} {roomState.roomId}</h1>
         <div className="roomShareRow">
-          <span className="hintText roomShareLabel">Code: <strong>{roomState.roomId}</strong></span>
+          <span className="hintText roomShareLabel">{ts('room.code')} <strong>{roomState.roomId}</strong></span>
           <button
             type="button"
             className="copyBtn"
-            title="Copy code"
+            title={ts('room.copyCode')}
             onClick={() => {
               void navigator.clipboard.writeText(roomState.roomId)
               setCopiedCode(true)
@@ -65,7 +66,7 @@ export function RoomScreen({
           <button
             type="button"
             className="copyBtn"
-            title="Copy room link"
+            title={ts('room.copyLink')}
             onClick={() => {
               const link = `${window.location.origin}${roomPathPrefix}${roomState.roomId}`
               void navigator.clipboard.writeText(link)
@@ -83,7 +84,7 @@ export function RoomScreen({
 
         <div className="timerRow">
           <label htmlFor="timer" className="label">
-            Timer: {roomState.room.settings.timer}s
+            {ts('room.timer')} {roomState.room.settings.timer}s
           </label>
           <input
             id="timer"
@@ -99,7 +100,7 @@ export function RoomScreen({
 
         <div className="timerRow">
           <label htmlFor="difficulty" className="label">
-            Difficulty: {roomState.room.settings.difficulty}
+            {ts('room.difficulty')} {roomState.room.settings.difficulty}
           </label>
           <input
             id="difficulty"
@@ -115,7 +116,7 @@ export function RoomScreen({
 
         <div className="timerRow">
           <label htmlFor="winScore" className="label">
-            Win Score: {roomState.room.settings.winScore ?? 50}
+            {ts('room.winScore')} {roomState.room.settings.winScore ?? 50}
           </label>
           <input
             id="winScore"
@@ -131,23 +132,23 @@ export function RoomScreen({
 
         {isHost && (
           <button type="button" className="collectionsPickerBtn" onClick={onOpenCollectionPicker}>
-            Choose Collections
+            {ts('room.chooseCollections')}
             {(roomState.room.settings.selectedCollections?.length ?? 0) > 0 &&
               ` (${roomState.room.settings.selectedCollections?.length ?? 0})`}
           </button>
         )}
 
         <div>
-          <h2 className="sectionTitle">Players</h2>
+          <h2 className="sectionTitle">{ts('room.players')}</h2>
           <ul className="playerList">
             {roomState.room.players.map((player) => (
               <li key={player.id} className="playerItem">
                 <span>
                   {player.name}
-                  {player.id === playerId ? ' (You)' : ''}
+                  {player.id === playerId ? ` ${ts('room.you')}` : ''}
                 </span>
-                <strong>{connectedPlayerIds.has(player.id) ? 'Online' : 'Offline'}</strong>
-                {player.id === roomState.room.hostId ? <strong>Host</strong> : null}
+                <strong>{connectedPlayerIds.has(player.id) ? ts('room.online') : ts('room.offline')}</strong>
+                {player.id === roomState.room.hostId ? <strong>{ts('room.host')}</strong> : null}
               </li>
             ))}
           </ul>
@@ -160,38 +161,36 @@ export function RoomScreen({
             onClick={onStartGame}
             disabled={!canStartGame || Boolean(roomState.startRequested)}
           >
-            {roomState.startRequested ? 'Waiting for players...' : 'Start'}
+            {roomState.startRequested ? ts('room.waitingForPlayers') : ts('room.start')}
           </button>
         ) : (
           <p className="hintText">
             {roomState.startRequested
-              ? 'Host started the game. Waiting for everyone to reconnect.'
-              : 'Waiting for host to start the game.'}
+              ? ts('room.hostStartedWaiting')
+              : ts('room.waitingForHost')}
           </p>
         )}
 
         {isHost && !canStartGame ? (
-          <p className="hintText">At least 2 players are required to start.</p>
+          <p className="hintText">{ts('room.minPlayers')}</p>
         ) : null}
 
         {roomState.startRequested && disconnectedPlayers.length > 0 ? (
           <p className="hintText">
-            Waiting for: {disconnectedPlayers.map((player) => player.name).join(', ')}
+            {ts('room.waitingFor')} {disconnectedPlayers.map((player) => player.name).join(', ')}
           </p>
         ) : null}
 
-        {roomState.started ? <p className="startedText">Game started.</p> : null}
+        {roomState.started ? <p className="startedText">{ts('room.gameStarted')}</p> : null}
         {wsBlocked && (
           <p className="hintText" style={{ color: '#c0392b', fontWeight: 600 }}>
-            ⚠️ Real-time connection blocked. Likely cause: your router firewall or antivirus
-            (e.g. Kaspersky, ESET) is filtering WebSocket traffic. Try: disable antivirus network
-            protection, reboot your router, or switch to mobile hotspot / VPN.
+            {ts('room.wsBlocked')}
           </p>
         )}
         {statusMessage ? <p className="hintText">{statusMessage}</p> : null}
 
         <button type="button" className="exitButton" onClick={onExitRoom}>
-          Exit Room
+          {ts('room.exitRoom')}
         </button>
       </section>
     </main>

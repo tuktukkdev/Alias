@@ -1,3 +1,10 @@
+# SSH keys — never commit private keys
+alias_deploy
+alias_deploy.pub
+*.pem
+id_rsa
+id_ed25519
+
 # Dependencies
 apps/*/node_modules/
 

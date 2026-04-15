@@ -1,4 +1,5 @@
 import type { ChatMessage, Player, RoomState, VolumeMenuState } from '../types/game'
+import { ts } from '../i18n'
 import './GameScreen.css'
 
 interface GameScreenProps {
@@ -30,7 +31,7 @@ const getTurnTimerText = (
   if (gameStartsIn > 0) {
     return (
       <>
-        Game starts in <strong>{gameStartsIn}s</strong>
+        {ts('game.startsIn')} <strong>{gameStartsIn}s</strong>
       </>
     )
   }
@@ -38,8 +39,8 @@ const getTurnTimerText = (
   if (roomState.waitingForWordResolutionAtZero) {
     return (
       <>
-        Time Left: <strong>0s</strong>
-        {activePlayer ? ` | Waiting for "${activePlayer.name}" word to be guessed or skipped` : ''}
+        {ts('game.timeLeft')} <strong>0s</strong>
+        {activePlayer ? ` | ${ts('game.waitingForWord').replace('{name}', activePlayer.name)}` : ''}
       </>
     )
   }
@@ -79,21 +80,21 @@ export function GameScreen({
   return (
     <main className="screen">
       <section className="panel gamePanel">
-        <h1 className="title">Game Room {roomState.roomId}</h1>
+        <h1 className="title">{ts('game.title')} {roomState.roomId}</h1>
         <p className="turnTimer">
           {getTurnTimerText(roomState, gameStartsIn, activePlayer, turnSecondsLeft)}
         </p>
 
         <div className="gameLayout">
           <div className="gameColumn scoreboardSection">
-            <h2 className="sectionTitle">Players Score</h2>
+            <h2 className="sectionTitle">{ts('game.playersScore')}</h2>
             <table className="scoreboardTable">
               <thead>
                 <tr>
-                  <th scope="col">Player</th>
-                  <th scope="col">Score</th>
+                  <th scope="col">{ts('game.player')}</th>
+                  <th scope="col">{ts('game.score')}</th>
                   <th scope="col" className="voiceHeaderCell">
-                    Voice
+                    {ts('game.voice')}
                   </th>
                 </tr>
               </thead>
@@ -109,14 +110,14 @@ export function GameScreen({
                     >
                       <td>
                         {player.name}
-                        {player.id === playerId ? ' (You)' : ''}
+                        {player.id === playerId ? ` ${ts('game.you')}` : ''}
                       </td>
                       <td>{player.score}</td>
                       <td className="voiceCell">
                         <span
                           className={`voiceIndicator ${isSpeaking ? 'voiceIndicatorActive' : ''}`}
-                          title={isSpeaking ? `${player.name} is speaking` : `${player.name} is muted`}
-                          aria-label={isSpeaking ? `${player.name} is speaking` : `${player.name} is muted`}
+                          title={isSpeaking ? ts('game.isSpeaking').replace('{name}', player.name) : ts('game.isMuted').replace('{name}', player.name)}
+                          aria-label={isSpeaking ? ts('game.isSpeaking').replace('{name}', player.name) : ts('game.isMuted').replace('{name}', player.name)}
                         />
                       </td>
                     </tr>
@@ -127,30 +128,30 @@ export function GameScreen({
           </div>
 
           <div className="gameColumn futureColumn wordColumn">
-            <h2 className="sectionTitle">Word Card</h2>
+            <h2 className="sectionTitle">{ts('game.wordCard')}</h2>
             <div className="wordCard">
               {gameStartsIn > 0 ? (
-                <p className="wordHint">Get ready...</p>
+                <p className="wordHint">{ts('game.getReady')}</p>
               ) : isActivePlayer ? (
-                <p className="wordValue">{activeWord ?? 'Loading word...'}</p>
+                <p className="wordValue">{activeWord ?? ts('game.loadingWord')}</p>
               ) : (
                 <p className="wordHint">
                   {activePlayer
-                    ? `${activePlayer.name} is explaining now. Guess the word in chat.`
-                    : 'Waiting for active player.'}
+                    ? ts('game.explaining').replace('{name}', activePlayer.name)
+                    : ts('game.waitingForPlayer')}
                 </p>
               )}
             </div>
 
             {isActivePlayer && gameStartsIn === 0 ? (
               <button type="button" className="skipButton" onClick={onSkipWord}>
-                Skip Word
+                {ts('game.skipWord')}
               </button>
             ) : null}
           </div>
 
           <div className="gameColumn chatSection">
-            <h2 className="sectionTitle">Chat</h2>
+            <h2 className="sectionTitle">{ts('game.chat')}</h2>
             <ul className="chatList" ref={chatListRef}>
               {chatMessages.map((message) => (
                 <li
@@ -159,7 +160,7 @@ export function GameScreen({
                 >
                   <p className="chatMeta">
                     {message.playerName}
-                    {message.playerId === playerId ? ' (You)' : ''}
+                    {message.playerId === playerId ? ` ${ts('game.you')}` : ''}
                   </p>
                   <p className="chatText">{message.text}</p>
                 </li>
@@ -177,11 +178,11 @@ export function GameScreen({
                 className="input"
                 value={chatInput}
                 onChange={(event) => onChatInputChange(event.target.value)}
-                placeholder="Type your guess"
+                placeholder={ts('game.typeGuess')}
                 maxLength={50}
               />
               <button type="submit" className="playButton">
-                Send
+                {ts('game.send')}
               </button>
             </form>
 
@@ -195,7 +196,7 @@ export function GameScreen({
             className="volumeContextMenu"
             style={{ left: volumeMenu.x, top: volumeMenu.y }}
           >
-            <p className="volumeMenuTitle">Volume: {volumeMenu.playerName}</p>
+            <p className="volumeMenuTitle">{ts('game.volume')} {volumeMenu.playerName}</p>
             <input
               className="volumeSlider"
               type="range"
@@ -210,24 +211,24 @@ export function GameScreen({
             />
             <p className="volumeMenuValue">
               {volumeMenu.playerId === playerId
-                ? 'Your own mic volume is controlled by system input settings.'
+                ? ts('game.ownMic')
                 : `${Math.round(getPlayerVolume(volumeMenu.playerId) * 100)}%`}
             </p>
           </div>
         ) : null}
 
         <button type="button" className="exitButton" onClick={onExitRoom}>
-          Exit Game
+          {ts('game.exitGame')}
         </button>
       </section>
 
       {roomState.winner && (
         <div className="winnerOverlay">
           <div className="winnerPanel">
-            <h2 className="winnerTitle">Game Over!</h2>
-            <p className="winnerName">🏆 {roomState.winner.playerName} wins!</p>
+            <h2 className="winnerTitle">{ts('game.gameOver')}</h2>
+            <p className="winnerName">{ts('game.wins').replace('{name}', roomState.winner.playerName)}</p>
             <button type="button" className="mainMenuButton" onClick={onExitRoom}>
-              Main Menu
+              {ts('game.mainMenu')}
             </button>
           </div>
         </div>

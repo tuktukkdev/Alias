@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { API_BASE } from '../config/client'
 import type { AuthUser } from '../types/auth'
+import { ts } from '../i18n'
 import './CollectionsScreen.css'
 
 interface CollectionEntry {
@@ -55,11 +56,11 @@ export default function CollectionsScreen({ user, onBack }: Props) {
     setListError(null)
     try {
       const res = await fetch(`${API_BASE}/collections/${userId}`)
-      if (!res.ok) throw new Error('Failed to load collections')
+      if (!res.ok) throw new Error('load_fail')
       const data = (await res.json()) as CollectionEntry[]
       setCollections(data)
     } catch {
-      setListError('Could not load collections.')
+      setListError(ts('collections.loadError'))
     } finally {
       setListLoading(false)
     }
@@ -68,7 +69,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
   // ── Create collection ─────────────────────────────────────────────────────
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!createName.trim()) { setCreateError('Name is required.'); return }
+    if (!createName.trim()) { setCreateError(ts('collections.nameRequired')); return }
     setCreateError(null)
     setCreating(true)
     try {
@@ -88,7 +89,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
       setCreateDesc('')
       setCreateDiff(1)
     } catch {
-      setCreateError('Network error.')
+      setCreateError(ts('collections.networkError'))
     } finally {
       setCreating(false)
     }
@@ -117,7 +118,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
     setWordsSaveMsg(null)
     try {
       const res = await fetch(`${API_BASE}/collections/${col.id}/words?userId=${userId}`)
-      if (!res.ok) throw new Error('Failed to load words')
+      if (!res.ok) throw new Error('load_words_fail')
       const data = (await res.json()) as WordEntry[]
       setWords(data)
       setWordsText(data.map((w) => w.word).join('\n'))
@@ -157,7 +158,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
       if (saveMsgTimer.current) clearTimeout(saveMsgTimer.current)
       saveMsgTimer.current = setTimeout(() => setWordsSaveMsg(null), 3000)
     } catch {
-      setWordsSaveMsg('Failed to save.')
+      setWordsSaveMsg(ts('collections.saveFailed'))
     } finally {
       setWordsSaving(false)
     }
@@ -170,7 +171,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
         <div className="collectionsPanel">
           <div className="collectionsPanelHeader">
             <button className="collectionsBackBtn" onClick={() => setOpenCollection(null)}>
-              ← Back
+              {ts('collections.back')}
             </button>
             <h2 className="collectionsPanelTitle">{openCollection.name}</h2>
           </div>
@@ -178,16 +179,16 @@ export default function CollectionsScreen({ user, onBack }: Props) {
             <p className="collectionsWordEditorDesc">{openCollection.description}</p>
           )}
           <p className="collectionsWordEditorMeta">
-            Difficulty: <strong>{openCollection.difficulty}</strong> &nbsp;·&nbsp;
-            Words: <strong>{openCollection.amountOfCards}</strong>
+            {ts('collections.difficulty')}: <strong>{openCollection.difficulty}</strong> &nbsp;·&nbsp;
+            {ts('collections.words')}: <strong>{openCollection.amountOfCards}</strong>
           </p>
 
           {wordsLoading ? (
-            <p className="collectionsMsg">Loading words…</p>
+            <p className="collectionsMsg">{ts('collections.loadingWords')}</p>
           ) : (
             <>
               <label className="collectionsLabel" htmlFor="wordsTextarea">
-                Words <span className="collectionsLabelHint">(one per line)</span>
+                {ts('collections.wordsPerLine')} <span className="collectionsLabelHint">{ts('collections.wordsPerLineHint')}</span>
               </label>
               <textarea
                 id="wordsTextarea"
@@ -204,7 +205,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
                   onClick={() => { void handleSaveWords() }}
                   disabled={wordsSaving}
                 >
-                  {wordsSaving ? 'Saving…' : 'Save words'}
+                  {wordsSaving ? ts('collections.saving') : ts('collections.saveWords')}
                 </button>
                 {wordsSaveMsg && (
                   <span className={`collectionsWordsSaveMsg${wordsSaveMsg.startsWith('Failed') ? ' collectionsWordsSaveMsgError' : ''}`}>
@@ -231,20 +232,20 @@ export default function CollectionsScreen({ user, onBack }: Props) {
         </div>
 
         {listLoading ? (
-          <p className="collectionsMsg">Loading…</p>
+          <p className="collectionsMsg">{ts('collections.loading')}</p>
         ) : listError ? (
           <p className="collectionsMsg collectionsError">{listError}</p>
         ) : collections.length === 0 ? (
-          <p className="collectionsMsg collectionsEmpty">No collections yet. Create one below.</p>
+          <p className="collectionsMsg collectionsEmpty">{ts('collections.empty')}</p>
         ) : (
           <div className="collectionsTableWrap">
             <table className="collectionsTable">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th className="collectionsTableCenter">Difficulty</th>
-                  <th className="collectionsTableCenter">Words</th>
+                  <th>{ts('collections.name')}</th>
+                  <th>{ts('collections.description')}</th>
+                  <th className="collectionsTableCenter">{ts('collections.difficulty')}</th>
+                  <th className="collectionsTableCenter">{ts('collections.words')}</th>
                   <th />
                 </tr>
               </thead>
@@ -263,7 +264,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
                       <button
                         className="collectionsDeleteBtn"
                         onClick={(e) => { e.stopPropagation(); void handleDelete(col.id) }}
-                        title="Delete collection"
+                        title={ts('collections.deleteTitle')}
                       >
                         ✕
                       </button>
@@ -277,10 +278,10 @@ export default function CollectionsScreen({ user, onBack }: Props) {
 
         {/* Create form */}
         <div className="collectionsCreateSection">
-          <h3 className="collectionsCreateTitle">New collection</h3>
+          <h3 className="collectionsCreateTitle">{ts('collections.newCollection')}</h3>
           <form className="collectionsCreateForm" onSubmit={(e) => { void handleCreate(e) }}>
             <div className="collectionsFormRow">
-              <label className="collectionsLabel" htmlFor="colName">Name</label>
+              <label className="collectionsLabel" htmlFor="colName">{ts('collections.name')}</label>
               <input
                 id="colName"
                 className="collectionsInput"
@@ -288,11 +289,11 @@ export default function CollectionsScreen({ user, onBack }: Props) {
                 maxLength={128}
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
-                placeholder="My collection"
+                placeholder={ts('collections.namePlaceholder')}
               />
             </div>
             <div className="collectionsFormRow">
-              <label className="collectionsLabel" htmlFor="colDesc">Description</label>
+              <label className="collectionsLabel" htmlFor="colDesc">{ts('collections.description')}</label>
               <input
                 id="colDesc"
                 className="collectionsInput"
@@ -300,11 +301,11 @@ export default function CollectionsScreen({ user, onBack }: Props) {
                 maxLength={500}
                 value={createDesc}
                 onChange={(e) => setCreateDesc(e.target.value)}
-                placeholder="Optional description"
+                placeholder={ts('collections.descPlaceholder')}
               />
             </div>
             <div className="collectionsFormRow collectionsFormRowInline">
-              <label className="collectionsLabel" htmlFor="colDiff">Difficulty</label>
+              <label className="collectionsLabel" htmlFor="colDiff">{ts('collections.difficulty')}</label>
               <input
                 id="colDiff"
                 className="collectionsInputSmall"
@@ -321,7 +322,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
               type="submit"
               disabled={creating}
             >
-              {creating ? 'Creating…' : 'Create collection'}
+              {creating ? ts('collections.creating') : ts('collections.createCollection')}
             </button>
           </form>
         </div>

@@ -1,3 +1,4 @@
+import { ts } from '../i18n'
 import './JoinScreen.css'
 
 interface JoinScreenProps {
@@ -31,11 +32,11 @@ export function JoinScreen({
         }}
       >
         <div className="joinHero">
-          <h1 className="joinTitle">ALIAS</h1>
-          <p className="joinSubtitle">Will your team understand you at a glance? Prove it!</p>
+          <h1 className="joinTitle">{ts('join.title')}</h1>
+          <p className="joinSubtitle">{ts('join.subtitle')}</p>
         </div>
         <label htmlFor="name" className="label">
-          Name
+          {ts('join.name')}
         </label>
         <input
           id="name"
@@ -47,7 +48,7 @@ export function JoinScreen({
           onChange={(event) => onNameChange(event.target.value)}
         />
         <label htmlFor="roomCode" className="label">
-          Room Code
+          {ts('join.roomCode')}
         </label>
         <input
           id="roomCode"
@@ -59,10 +60,10 @@ export function JoinScreen({
         />
         <div className="actions">
           <button type="submit" className="playButton">
-            Play
+            {ts('join.play')}
           </button>
           <button type="button" className="createRoomButton" onClick={onCreateRoom}>
-            Create Room
+            {ts('join.createRoom')}
           </button>
         </div>
         {statusMessage ? <p className="hintText">{statusMessage}</p> : null}

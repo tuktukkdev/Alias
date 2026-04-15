@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../config/client'
 import type { AuthUser } from '../types/auth'
+import { ts } from '../i18n'
 import './StatsModal.css'
 
 interface UserStats {
@@ -24,13 +25,13 @@ export function StatsModal({ user, onClose }: StatsModalProps) {
       try {
         const res = await fetch(`${API_BASE}/auth/stats/${user.id}`)
         if (!res.ok) {
-          setError('Could not load stats.')
+          setError(ts('stats.loadError'))
           return
         }
         const data = (await res.json()) as UserStats
         setStats(data)
       } catch {
-        setError('Could not reach the server.')
+        setError(ts('stats.serverError'))
       }
     }
     void load()
@@ -54,25 +55,25 @@ export function StatsModal({ user, onClose }: StatsModalProps) {
 
         {error && <p className="formError">{error}</p>}
 
-        {!stats && !error && <p className="hintText">Loading…</p>}
+        {!stats && !error && <p className="hintText">{ts('stats.loading')}</p>}
 
         {stats && (
           <table className="statsTable">
             <tbody>
               <tr>
-                <td className="statsLabel">Words guessed</td>
+                <td className="statsLabel">{ts('stats.guessed')}</td>
                 <td className="statsValue">{stats.guessed}</td>
               </tr>
               <tr>
-                <td className="statsLabel">Words skipped</td>
+                <td className="statsLabel">{ts('stats.skipped')}</td>
                 <td className="statsValue">{stats.skipped}</td>
               </tr>
               <tr>
-                <td className="statsLabel">Wins</td>
+                <td className="statsLabel">{ts('stats.wins')}</td>
                 <td className="statsValue">{stats.wins}</td>
               </tr>
               <tr>
-                <td className="statsLabel">Losses</td>
+                <td className="statsLabel">{ts('stats.losses')}</td>
                 <td className="statsValue">{stats.losses}</td>
               </tr>
             </tbody>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { ts } from '../i18n'
 import './AuthModal.css'
 
 type AuthTab = 'login' | 'register'
@@ -78,28 +79,28 @@ export function AuthModal({
     const trimmedPassword = password.trim()
 
     if (!trimmedUsername || !trimmedPassword) {
-      setClientError('Please fill in all required fields.')
+      setClientError(ts('auth.fillAllFields'))
       return
     }
 
     if (!USERNAME_RE.test(trimmedUsername)) {
-      setClientError('Username may only contain letters, numbers, . / and _')
+      setClientError(ts('auth.usernameChars'))
       return
     }
 
     if (trimmedPassword.length < 6) {
-      setClientError('Password must be at least 6 characters.')
+      setClientError(ts('auth.passwordMinLength'))
       return
     }
 
     if (tab === 'register') {
       const trimmedEmail = email.trim()
       if (!trimmedEmail || !EMAIL_RE.test(trimmedEmail)) {
-        setClientError('Please enter a valid email address.')
+        setClientError(ts('auth.invalidEmail'))
         return
       }
       if (trimmedPassword !== confirmPassword.trim()) {
-        setClientError('Passwords do not match.')
+        setClientError(ts('auth.passwordsMismatch'))
         return
       }
       onRegister(trimmedUsername, trimmedEmail, trimmedPassword)
@@ -122,7 +123,7 @@ export function AuthModal({
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmedEmail = forgotEmail.trim()
-    if (!trimmedEmail) { setForgotError('Please enter your email address.'); return }
+    if (!trimmedEmail) { setForgotError(ts('auth.enterEmail')); return }
     setForgotLoading(true)
     setForgotError('')
     const ok = await onForgotPassword(trimmedEmail)
@@ -130,7 +131,7 @@ export function AuthModal({
     if (ok) {
       setForgotSent(true)
     } else {
-      setForgotError('Something went wrong. Please try again.')
+      setForgotError(ts('auth.somethingWrong'))
     }
   }
 
@@ -145,24 +146,24 @@ export function AuthModal({
                 type="button"
                 onClick={() => setTab('login')}
               >
-                Log in
+                {ts('auth.loginTab')}
               </button>
               <button
                 className={`authTab${tab === 'register' ? ' authTabActive' : ''}`}
                 type="button"
                 onClick={() => setTab('register')}
               >
-                Register
+                {ts('auth.registerTab')}
               </button>
             </>
           )}
           {forgotMode && (
             <button className="authTab authTabActive" type="button" disabled>
-              Reset password
+              {ts('auth.resetPasswordTab')}
             </button>
           )}
         </div>
-        <button className="authDialogClose" type="button" onClick={onClose} aria-label="Close">
+        <button className="authDialogClose" type="button" onClick={onClose} aria-label={ts('auth.closeAria')}>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
           </svg>
@@ -172,14 +173,14 @@ export function AuthModal({
       {forgotMode ? (
         forgotSent ? (
           <div className="authForm">
-            <p className="authSuccess">Check your inbox — we sent you a password reset link.</p>
+            <p className="authSuccess">{ts('auth.checkInbox')}</p>
             <button type="button" className="authForgotLink" onClick={() => setForgotMode(false)}>
-              ← Back to log in
+              {ts('auth.backToLogin')}
             </button>
           </div>
         ) : (
           <form className="authForm" onSubmit={(e) => void handleForgotSubmit(e)}>
-            <label className="label" htmlFor="forgotEmail">Email</label>
+            <label className="label" htmlFor="forgotEmail">{ts('auth.email')}</label>
             <input
               id="forgotEmail"
               name="email"
@@ -192,17 +193,17 @@ export function AuthModal({
             />
             {forgotError && <p className="authError">{forgotError}</p>}
             <button type="submit" className="playButton" disabled={forgotLoading}>
-              {forgotLoading ? 'Sending…' : 'Send reset link'}
+              {forgotLoading ? ts('auth.sending') : ts('auth.sendResetLink')}
             </button>
             <button type="button" className="authForgotLink" onClick={() => setForgotMode(false)}>
-              ← Back to log in
+              {ts('auth.backToLogin')}
             </button>
           </form>
         )
       ) : (
         <form className="authForm" onSubmit={handleSubmit}>
           <label className="label" htmlFor="authUsername">
-            Username <span className="requiredMark">*</span>
+            {ts('auth.username')} <span className="requiredMark">*</span>
           </label>
           <input
             id="authUsername"
@@ -223,7 +224,7 @@ export function AuthModal({
           {tab === 'register' && (
             <>
               <label className="label" htmlFor="authEmail">
-                Email <span className="requiredMark">*</span>
+                {ts('auth.email')} <span className="requiredMark">*</span>
               </label>
               <input
                 id="authEmail"
@@ -239,7 +240,7 @@ export function AuthModal({
           )}
 
           <label className="label" htmlFor="authPassword">
-            Password <span className="requiredMark">*</span>
+            {ts('auth.password')} <span className="requiredMark">*</span>
           </label>
           <input
             id="authPassword"
@@ -256,7 +257,7 @@ export function AuthModal({
           {tab === 'register' && (
             <>
               <label className="label" htmlFor="authConfirmPassword">
-                Confirm Password <span className="requiredMark">*</span>
+                {ts('auth.confirmPassword')} <span className="requiredMark">*</span>
               </label>
               <input
                 id="authConfirmPassword"
@@ -275,12 +276,12 @@ export function AuthModal({
           {displayError && <p className="authError">{displayError}</p>}
 
           <button type="submit" className="playButton" disabled={loading}>
-            {loading ? 'Please wait…' : tab === 'login' ? 'Log in' : 'Create account'}
+            {loading ? ts('auth.pleaseWait') : tab === 'login' ? ts('auth.loginTab') : ts('auth.createAccount')}
           </button>
 
           {tab === 'login' && (
             <button type="button" className="authForgotLink" onClick={() => setForgotMode(true)}>
-              Forgot password?
+              {ts('auth.forgotPassword')}
             </button>
           )}
         </form>

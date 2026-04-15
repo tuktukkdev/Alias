@@ -1,3 +1,4 @@
+import { ts } from '../i18n'
 import './Footer.css'
 
 interface FooterProps {
@@ -8,16 +9,16 @@ export function Footer({ onNavigate }: FooterProps) {
   return (
     <footer className="siteFooter">
       <div className="siteFooterInner">
-        <span className="footerLogo">Alias</span>
+        <span className="footerLogo">{ts('footer.logo')}</span>
         <nav className="footerLinks">
           <button type="button" className="footerLink" onClick={() => onNavigate('howtoplay')}>
-            How to Play
+            {ts('footer.howToPlay')}
           </button>
           <button type="button" className="footerLink" onClick={() => onNavigate('terms')}>
-            Terms of Service
+            {ts('footer.terms')}
           </button>
         </nav>
-        <p className="footerCopyright">Valentina Vladimirova &middot; 2026</p>
+        <p className="footerCopyright">{ts('footer.copyright')}</p>
       </div>
     </footer>
   )

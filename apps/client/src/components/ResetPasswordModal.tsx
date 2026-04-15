@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { ts } from '../i18n'
 import './AuthModal.css'
 
 interface ResetPasswordModalProps {
@@ -21,8 +22,8 @@ export function ResetPasswordModal({ onClose, onSubmit }: ResetPasswordModalProp
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    if (newPassword.length < 6) { setError('Password must be at least 6 characters.'); return }
-    if (newPassword !== confirmPassword) { setError('Passwords do not match.'); return }
+    if (newPassword.length < 6) { setError(ts('resetPw.passwordMinLength')); return }
+    if (newPassword !== confirmPassword) { setError(ts('resetPw.passwordsMismatch')); return }
     setLoading(true)
     const err = await onSubmit(newPassword)
     setLoading(false)
@@ -35,10 +36,10 @@ export function ResetPasswordModal({ onClose, onSubmit }: ResetPasswordModalProp
       <div className="authDialogHeader">
         <div className="authTabs">
           <button className="authTab authTabActive" type="button" disabled>
-            New password
+            {ts('resetPw.newPassword')}
           </button>
         </div>
-        <button className="authDialogClose" type="button" onClick={onClose} aria-label="Close">
+        <button className="authDialogClose" type="button" onClick={onClose} aria-label={ts('auth.closeAria')}>
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
           </svg>
@@ -47,14 +48,14 @@ export function ResetPasswordModal({ onClose, onSubmit }: ResetPasswordModalProp
 
       {success ? (
         <div className="authForm">
-          <p className="authSuccess">Password updated! You can now log in with your new password.</p>
+          <p className="authSuccess">{ts('resetPw.success')}</p>
           <button type="button" className="playButton" onClick={onClose}>
-            Log in
+            {ts('resetPw.login')}
           </button>
         </div>
       ) : (
         <form className="authForm" onSubmit={(e) => void handleSubmit(e)}>
-          <label className="label" htmlFor="resetNewPassword">New password</label>
+          <label className="label" htmlFor="resetNewPassword">{ts('resetPw.newPassword')}</label>
           <input
             id="resetNewPassword"
             name="newPassword"
@@ -65,7 +66,7 @@ export function ResetPasswordModal({ onClose, onSubmit }: ResetPasswordModalProp
             autoComplete="new-password"
             autoFocus
           />
-          <label className="label" htmlFor="resetConfirmPassword">Confirm password</label>
+          <label className="label" htmlFor="resetConfirmPassword">{ts('resetPw.confirmPassword')}</label>
           <input
             id="resetConfirmPassword"
             name="confirmPassword"
@@ -77,7 +78,7 @@ export function ResetPasswordModal({ onClose, onSubmit }: ResetPasswordModalProp
           />
           {error && <p className="authError">{error}</p>}
           <button type="submit" className="playButton" disabled={loading}>
-            {loading ? 'Saving…' : 'Set new password'}
+            {loading ? ts('resetPw.saving') : ts('resetPw.setNewPassword')}
           </button>
         </form>
       )}

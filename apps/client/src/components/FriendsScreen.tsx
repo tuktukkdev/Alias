@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { API_BASE } from '../config/client'
 import type { AuthUser } from '../types/auth'
+import { ts } from '../i18n'
 import './FriendsScreen.css'
 
 interface FriendEntry {
@@ -59,7 +60,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
         body: JSON.stringify({ userId: Number(user.id), username }),
       })
       if (res.status === 404) {
-        setSendStatus({ type: 'error', text: 'Username not found.' })
+        setSendStatus({ type: 'error', text: ts('friends.userNotFound') })
         return
       }
       if (res.status === 409) {
@@ -69,14 +70,14 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
       }
       if (!res.ok) {
         const body = (await res.json()) as { error: string }
-        setSendStatus({ type: 'error', text: body.error ?? 'Failed to send request.' })
+        setSendStatus({ type: 'error', text: body.error ?? ts('friends.sendFailed') })
         return
       }
-      setSendStatus({ type: 'success', text: `Friend request sent to ${username}.` })
+      setSendStatus({ type: 'success', text: ts('friends.requestSent').replace('{name}', username) })
       setSendInput('')
       void loadData()
     } catch {
-      setSendStatus({ type: 'error', text: 'Could not reach the server.' })
+      setSendStatus({ type: 'error', text: ts('friends.serverError') })
     } finally {
       setSending(false)
     }
@@ -140,25 +141,25 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
       <section className="panel friendsPanel">
         <div className="profileHeader">
           <button type="button" className="backButton" onClick={onBack}>
-            ← Back
+            {ts('friends.back')}
           </button>
-          <h1 className="title">Friends</h1>
+          <h1 className="title">{ts('friends.title')}</h1>
         </div>
 
         {loading ? (
-          <p className="hintText">Loading…</p>
+          <p className="hintText">{ts('friends.loading')}</p>
         ) : (
           <>
             {/* Pending section */}
             <div className="friendsSection">
               <h2 className="sectionTitle">
-                Pending
+                {ts('friends.pending')}
                 {data.pending.length > 0 && (
                   <span className="friendsBadgeInline">{data.pending.length}</span>
                 )}
               </h2>
               {data.pending.length === 0 ? (
-                <p className="hintText">No pending requests.</p>
+                <p className="hintText">{ts('friends.noPending')}</p>
               ) : (
                 <ul className="friendsList">
                   {data.pending.map((p) => (
@@ -170,14 +171,14 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
                           className="friendsAcceptBtn"
                           onClick={() => void handleAccept(p.id)}
                         >
-                          Accept
+                          {ts('friends.accept')}
                         </button>
                         <button
                           type="button"
                           className="friendsDeclineBtn"
                           onClick={() => void handleDecline(p.id)}
                         >
-                          Decline
+                          {ts('friends.decline')}
                         </button>
                       </div>
                     </li>
@@ -188,9 +189,9 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
 
             {/* Friends section */}
             <div className="friendsSection">
-              <h2 className="sectionTitle">Friends ({data.friends.length})</h2>
+              <h2 className="sectionTitle">{ts('friends.friendsCount').replace('{count}', String(data.friends.length))}</h2>
               {data.friends.length === 0 ? (
-                <p className="hintText">No friends yet.</p>
+                <p className="hintText">{ts('friends.noFriends')}</p>
               ) : (
                 <ul className="friendsList">
                   {data.friends.map((f) => (
@@ -203,17 +204,17 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
                           disabled={joinStatus[f.id] === 'loading'}
                           onClick={() => void handleJoin(f.id)}
                         >
-                          {joinStatus[f.id] === 'loading' ? '…' : 'Join'}
+                          {joinStatus[f.id] === 'loading' ? '…' : ts('friends.join')}
                         </button>
                         {joinStatus[f.id] === 'not_in_lobby' && (
-                          <span className="friendsJoinHint">Not in a lobby</span>
+                          <span className="friendsJoinHint">{ts('friends.notInLobby')}</span>
                         )}
                         <button
                           type="button"
                           className="friendsRemoveBtn"
                           onClick={() => void handleRemove(f.id)}
                         >
-                          Remove
+                          {ts('friends.remove')}
                         </button>
                       </div>
                     </li>
@@ -224,9 +225,9 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
 
             {/* Sent section */}
             <div className="friendsSection">
-              <h2 className="sectionTitle">Sent</h2>
+              <h2 className="sectionTitle">{ts('friends.sent')}</h2>
               {data.sent.length === 0 ? (
-                <p className="hintText">No outgoing requests.</p>
+                <p className="hintText">{ts('friends.noSent')}</p>
               ) : (
                 <ul className="friendsList">
                   {data.sent.map((s) => (
@@ -237,7 +238,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
                         className="friendsDeclineBtn"
                         onClick={() => void handleCancel(s.id)}
                       >
-                        Cancel
+                        {ts('friends.cancel')}
                       </button>
                     </li>
                   ))}
@@ -252,13 +253,13 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
           <input
             className="input"
             type="text"
-            placeholder="Username"
+            placeholder={ts('friends.usernamePlaceholder')}
             value={sendInput}
             maxLength={64}
             onChange={(e) => setSendInput(e.target.value)}
           />
           <button type="submit" className="playButton" disabled={sending || !sendInput.trim()}>
-            {sending ? '…' : 'Send'}
+            {sending ? '…' : ts('friends.send')}
           </button>
         </form>
         {sendStatus && (

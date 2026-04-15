@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { API_BASE } from '../config/client'
 import { fetchDefaultCollectionsRequest } from '../services/roomApi'
 import type { SelectedCollection } from '../types/game'
+import { ts } from '../i18n'
 import './CollectionPickerModal.css'
 
 interface CollectionEntry {
@@ -81,27 +82,27 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
   return (
     <div className="pickerOverlay" onClick={onCancel}>
       <div className="pickerPanel" onClick={(e) => e.stopPropagation()}>
-        <h2 className="pickerTitle">Choose Collections</h2>
+        <h2 className="pickerTitle">{ts('picker.title')}</h2>
 
         <input
           className="pickerSearch"
           type="text"
-          placeholder="Search by name, description, difficulty (1–3), or tags…"
+          placeholder={ts('picker.searchPlaceholder')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           autoFocus
         />
 
         {loading ? (
-          <p className="pickerEmpty">Loading...</p>
+          <p className="pickerEmpty">{ts('picker.loading')}</p>
         ) : (
           <>
             <div className="pickerSection">
-              <h3 className="pickerSectionTitle">Default Collections</h3>
+              <h3 className="pickerSectionTitle">{ts('picker.defaultCollections')}</h3>
               {defaultCollections.length === 0 ? (
-                <p className="pickerEmpty">No default collections available.</p>
+                <p className="pickerEmpty">{ts('picker.noDefault')}</p>
               ) : filteredDefault.length === 0 ? (
-                <p className="pickerEmpty">No matches.</p>
+                <p className="pickerEmpty">{ts('picker.noMatches')}</p>
               ) : (
                 <ul className="pickerList">
                   {filteredDefault.map((c) => (
@@ -110,7 +111,7 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
                       <div className="pickerItemInfo">
                         <span className="pickerItemName">{c.name}</span>
                         <span className="pickerItemMeta">
-                          Difficulty {c.difficulty} · {c.amountOfCards} words
+                          {ts('collections.difficulty')} {c.difficulty} · {c.amountOfCards} {ts('collections.words').toLowerCase()}
                           {c.tags && c.tags.length > 0 && ` · ${c.tags.join(', ')}`}
                         </span>
                       </div>
@@ -122,11 +123,11 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
 
             {userId && (
               <div className="pickerSection">
-                <h3 className="pickerSectionTitle">Your Collections</h3>
+                <h3 className="pickerSectionTitle">{ts('picker.yourCollections')}</h3>
                 {customCollections.length === 0 ? (
-                  <p className="pickerEmpty">No custom collections yet.</p>
+                  <p className="pickerEmpty">{ts('picker.noCustom')}</p>
                 ) : filteredCustom.length === 0 ? (
-                  <p className="pickerEmpty">No matches.</p>
+                  <p className="pickerEmpty">{ts('picker.noMatches')}</p>
                 ) : (
                   <ul className="pickerList">
                     {filteredCustom.map((c) => (
@@ -135,7 +136,7 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
                         <div className="pickerItemInfo">
                           <span className="pickerItemName">{c.name}</span>
                           <span className="pickerItemMeta">
-                            Difficulty {c.difficulty} · {c.amountOfCards} words
+                            {ts('collections.difficulty')} {c.difficulty} · {c.amountOfCards} {ts('collections.words').toLowerCase()}
                           </span>
                         </div>
                       </li>
@@ -147,7 +148,7 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
 
             {draft.length > 0 && totalWords < 100 && (
               <p className="pickerWarning">
-                Selected collections have only {totalWords} words (less than 100). The game may reuse words or fall back to default cards.
+                {ts('picker.warning').replace('{count}', String(totalWords))}
               </p>
             )}
           </>
@@ -155,10 +156,10 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
 
         <div className="pickerActions">
           <button type="button" className="pickerBtn pickerBtnCancel" onClick={onCancel}>
-            Cancel
+            {ts('picker.cancel')}
           </button>
           <button type="button" className="pickerBtn pickerBtnConfirm" onClick={() => onConfirm(draft)}>
-            Confirm {draft.length > 0 ? `(${draft.length})` : ''}
+            {ts('picker.confirm')} {draft.length > 0 ? `(${draft.length})` : ''}
           </button>
         </div>
       </div>

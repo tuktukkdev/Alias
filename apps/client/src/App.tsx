@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import './styles/common.css'
 import { API_BASE, ROOM_PATH_PREFIX, WS_BASE } from './config/client'
+import { ts } from './i18n'
 import desktopBck from './assets/desktop_bck.svg'
 import mobileBck from './assets/mobile_bck.svg'
 import { AuthModal } from './components/AuthModal'
@@ -144,24 +145,24 @@ function App() {
     const trimmedRoomCode = (options?.targetRoomCode ?? roomCode).trim()
     const existingPlayerId = options?.existingPlayerId?.trim()
 
-    if (!trimmedName) { setStatusMessage('Please enter your name first.'); return }
-    if (!trimmedRoomCode) { setStatusMessage('Please enter a room code.'); return }
+    if (!trimmedName) { setStatusMessage(ts('app.enterName')); return }
+    if (!trimmedRoomCode) { setStatusMessage(ts('app.enterRoomCode')); return }
 
-    setStatusMessage(options?.isAutoReconnect ? 'Reconnecting to room...' : 'Joining room...')
+    setStatusMessage(options?.isAutoReconnect ? ts('app.reconnecting') : ts('app.joining'))
     const response = await joinRoomRequest(trimmedRoomCode, trimmedName, existingPlayerId, authUser?.id)
 
     if (response.status === 404) {
-      setStatusMessage('Room not found. Check the room code and try again.')
+      setStatusMessage(ts('app.roomNotFound'))
       if (options?.isAutoReconnect) clearStoredRoomSession()
       return
     }
     if (response.status === 403) {
-      setStatusMessage('Game already started; only existing players can reconnect.')
+      setStatusMessage(ts('app.gameAlreadyStarted'))
       if (options?.isAutoReconnect) clearStoredRoomSession()
       return
     }
-    if (response.status === 409) { setStatusMessage('You are already in a room. Exit it first.'); return }
-    if (!response.ok) { setStatusMessage('Failed to join room. Is the server running on port 3000?'); return }
+    if (response.status === 409) { setStatusMessage(ts('app.alreadyInRoom')); return }
+    if (!response.ok) { setStatusMessage(ts('app.joinFailed')); return }
 
     const data = await parseRoomJoinResponse(response)
     setName(trimmedName)
@@ -172,18 +173,18 @@ function App() {
     setChatMessages([])
     setStoredRoomSession({ roomId: data.roomId, playerId: data.playerId, name: trimmedName })
     pushRoomPath(data.roomId)
-    setStatusMessage(options?.isAutoReconnect ? 'Reconnected to room.' : 'Joined room.')
+    setStatusMessage(options?.isAutoReconnect ? ts('app.reconnected') : ts('app.joined'))
   }
 
   const createRoom = async () => {
     const trimmedName = name.trim()
-    if (!trimmedName) { setStatusMessage('Please enter your name first.'); return }
+    if (!trimmedName) { setStatusMessage(ts('app.enterName')); return }
 
-    setStatusMessage('Creating room...')
+    setStatusMessage(ts('app.creatingRoom'))
     const response = await createRoomRequest(trimmedName, authUser?.id)
 
-    if (response.status === 409) { setStatusMessage('You are already in a room. Exit it first.'); return }
-    if (!response.ok) { setStatusMessage('Failed to create room. Is the server running on port 3000?'); return }
+    if (response.status === 409) { setStatusMessage(ts('app.alreadyInRoom')); return }
+    if (!response.ok) { setStatusMessage(ts('app.createFailed')); return }
 
     const data = await parseRoomJoinResponse(response)
     setName(trimmedName)
@@ -194,7 +195,7 @@ function App() {
     setChatMessages([])
     setStoredRoomSession({ roomId: data.roomId, playerId: data.playerId, name: trimmedName })
     pushRoomPath(data.roomId)
-    setStatusMessage('Room created.')
+    setStatusMessage(ts('app.roomCreated'))
   }
 
   const handleExitRoom = async () => {
@@ -215,7 +216,7 @@ function App() {
       room: { ...roomState.room, settings: { ...roomState.room.settings, timer: nextTimer } },
     })
     const response = await updateTimerRequest(roomState.roomId, playerId, nextTimer)
-    if (!response.ok) { setStatusMessage('Failed to update timer setting.'); return }
+    if (!response.ok) { setStatusMessage(ts('app.timerFailed')); return }
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
@@ -226,7 +227,7 @@ function App() {
       room: { ...roomState.room, settings: { ...roomState.room.settings, difficulty: nextDifficulty } },
     })
     const response = await updateSettingsRequest(roomState.roomId, playerId, { difficulty: nextDifficulty })
-    if (!response.ok) { setStatusMessage('Failed to update difficulty.'); return }
+    if (!response.ok) { setStatusMessage(ts('app.difficultyFailed')); return }
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
@@ -237,7 +238,7 @@ function App() {
       room: { ...roomState.room, settings: { ...roomState.room.settings, winScore: nextWinScore } },
     })
     const response = await updateSettingsRequest(roomState.roomId, playerId, { winScore: nextWinScore })
-    if (!response.ok) { setStatusMessage('Failed to update win score.'); return }
+    if (!response.ok) { setStatusMessage(ts('app.winScoreFailed')); return }
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
@@ -251,17 +252,17 @@ function App() {
   }
 
   const handleResetPassword = async (newPassword: string): Promise<string | null> => {
-    if (!resetToken) return 'Invalid reset link.'
+    if (!resetToken) return ts('app.invalidResetLink')
     try {
       const response = await resetPasswordRequest(resetToken, newPassword)
       if (!response.ok) {
         const data = (await response.json()) as { error?: string }
-        return data.error ?? 'Failed to reset password.'
+        return data.error ?? ts('app.resetFailed')
       }
       setResetToken(null)
       return null
     } catch {
-      return 'Could not reach the server.'
+      return ts('app.serverError')
     }
   }
 
@@ -269,17 +270,17 @@ function App() {
     if (!roomState || !playerId || !isHost) return
     setShowCollectionPicker(false)
     const response = await updateCollectionsRequest(roomState.roomId, playerId, collections)
-    if (!response.ok) { setStatusMessage('Failed to update collections.'); return }
+    if (!response.ok) { setStatusMessage(ts('app.collectionsFailed')); return }
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
   const startGame = async () => {
     if (!roomState || !playerId || !canStartGame) return
     const response = await startGameRequest(roomState.roomId, playerId)
-    if (!response.ok) { setStatusMessage('Could not start game.'); return }
+    if (!response.ok) { setStatusMessage(ts('app.startFailed')); return }
     const data = await parseRoomStateResponse(response)
     setRoomState(mapRoomState(data))
-    setStatusMessage(data.started ? 'Game started.' : 'Waiting for all players to connect...')
+    setStatusMessage(data.started ? ts('app.gameStarted') : ts('app.waitingPlayers'))
   }
 
   const sendChatMessage = async () => {
@@ -288,7 +289,7 @@ function App() {
     if (!trimmedText) return
 
     const response = await sendChatMessageRequest(roomState.roomId, playerId, trimmedText)
-    if (!response.ok) { setStatusMessage('Could not send message.'); return }
+    if (!response.ok) { setStatusMessage(ts('app.sendFailed')); return }
 
     const data = await parseChatMessageResponse(response)
     setChatMessages((current) =>
@@ -300,9 +301,9 @@ function App() {
   const skipWord = async () => {
     if (!roomState || !playerId) return
     const response = await skipWordRequest(roomState.roomId, playerId)
-    if (!response.ok) { setStatusMessage('Could not skip word.'); return }
+    if (!response.ok) { setStatusMessage(ts('app.skipFailed')); return }
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
-    setStatusMessage('Word skipped.')
+    setStatusMessage(ts('app.wordSkipped'))
   }
 
   /* ── Effects: URL & Auth Sync ────────────────────────── */
@@ -340,9 +341,9 @@ function App() {
     if (!verifyToken) return
     window.history.replaceState(null, '', window.location.pathname)
     void verifyEmailRequest(verifyToken).then((res) => {
-      setStatusMessage(res.ok ? 'Email verified successfully!' : 'Verification link is invalid or already used.')
+      setStatusMessage(res.ok ? ts('app.emailVerified') : ts('app.verifyFailed'))
     }).catch(() => {
-      setStatusMessage('Could not verify email. Please try again later.')
+      setStatusMessage(ts('app.verifyError'))
     })
   }, [])
 
