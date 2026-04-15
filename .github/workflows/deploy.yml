@@ -21,11 +21,8 @@ jobs:
             cd ~/Alias/apps
             git pull origin main
             # Write .env from CI secrets (idempotent — recreates it every deploy)
-            cat > .env <<EOF
-            POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-            RESEND_API_KEY=$RESEND_API_KEY
-            EMAIL_FROM=$EMAIL_FROM
-            EOF
+            printf 'POSTGRES_PASSWORD=%s\nRESEND_API_KEY=%s\nEMAIL_FROM=%s\n' \
+              "$POSTGRES_PASSWORD" "$RESEND_API_KEY" "$EMAIL_FROM" > .env
             # Rebuild and restart only app containers.
             # postgres and redis keep running — volumes (pgdata, uploads) are untouched.
             docker compose up -d --build server client
