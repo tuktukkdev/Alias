@@ -1,6 +1,8 @@
+// проверка наличия других сокетов игрока в комнате
 import { WebSocket } from "ws";
 import { roomSockets, socketPlayers } from "../state/serverState";
 
+// есть ли у игрока ещё один активный сокет (кроме текущего)
 export const hasAnotherSocketForPlayer = (
   roomId: string,
   playerId: string,

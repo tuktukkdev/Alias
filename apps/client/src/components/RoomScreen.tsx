@@ -3,6 +3,7 @@ import type { RoomState } from '../types/game'
 import { ts } from '../i18n'
 import './RoomScreen.css'
 
+// пропсы экрана комнаты
 interface RoomScreenProps {
   roomState: RoomState
   playerId: string | null
@@ -19,6 +20,7 @@ interface RoomScreenProps {
   onExitRoom: () => void
 }
 
+// экран лобби комнаты с настройками и списком игроков
 export function RoomScreen({
   roomState,
   playerId,
@@ -36,6 +38,7 @@ export function RoomScreen({
 }: RoomScreenProps) {
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  // множество подключенных игроков для определения онлайн/офлайн
   const connectedPlayerIds = new Set(roomState.connectedPlayerIds ?? [])
   const disconnectedPlayers = roomState.room.players.filter(
     (player) => !connectedPlayerIds.has(player.id),

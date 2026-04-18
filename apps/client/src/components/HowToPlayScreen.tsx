@@ -5,6 +5,7 @@ interface HowToPlayScreenProps {
   onBack: () => void
 }
 
+// страница с правилами игры
 export function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
   return (
     <main className="infoScreen">

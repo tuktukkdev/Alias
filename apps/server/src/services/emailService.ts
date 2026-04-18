@@ -1,9 +1,11 @@
+// сервис для отправки писем через resend
 import { Resend } from "resend";
 
 const apiKey = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
 const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 
+// инициализация resend клиента
 let resend: Resend | null = null;
 if (apiKey) {
   resend = new Resend(apiKey);
@@ -11,6 +13,7 @@ if (apiKey) {
   console.warn("[emailService] RESEND_API_KEY not set — emails will not be sent.");
 }
 
+// отправляем письмо для подтверждения email
 export async function sendVerificationEmail(to: string, token: string): Promise<void> {
   if (!resend) return;
   const url = `${FRONTEND_URL}?verifyToken=${encodeURIComponent(token)}`;
@@ -24,6 +27,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   });
 }
 
+// отправляем письмо для сброса пароля
 export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
   if (!resend) return;
   const url = `${FRONTEND_URL}?resetToken=${encodeURIComponent(token)}`;

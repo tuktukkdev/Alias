@@ -18,11 +18,14 @@ const broadcasters: RoomBroadcasters = {
   broadcastActiveWord,
 };
 
+// регистрация роутов для игровых комнат
 export const registerRoomRoutes = (app: Express): void => {
+  // проверка что сервер работает
   app.get("/", (_: Request, res: Response) => {
     res.send("Server works");
   });
 
+  // эндпоинт для создания комнаты
   app.post("/rooms", (req: Request, res: Response) => {
     const name = String(req.body?.name ?? "").trim();
     const timer = Number(req.body?.timer ?? 60);
@@ -104,6 +107,7 @@ export const registerRoomRoutes = (app: Express): void => {
     });
   });
 
+  // присоединиться к комнате
   app.post("/rooms/:roomId/join", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -188,6 +192,7 @@ export const registerRoomRoutes = (app: Express): void => {
     });
   });
 
+  // получить состояние комнаты
   app.get("/rooms/:roomId", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -199,6 +204,7 @@ export const registerRoomRoutes = (app: Express): void => {
     return res.json(buildRoomStatePayload(roomId, record));
   });
 
+  // обновить настройки комнаты (только хост)
   app.patch("/rooms/:roomId/settings", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -243,6 +249,7 @@ export const registerRoomRoutes = (app: Express): void => {
     return res.json(buildRoomStatePayload(roomId, record));
   });
 
+  // запустить игру в комнате
   app.post("/rooms/:roomId/start", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -271,6 +278,7 @@ export const registerRoomRoutes = (app: Express): void => {
     return res.json(buildRoomStatePayload(roomId, record));
   });
 
+  // получить историю чата комнаты
   app.get("/rooms/:roomId/chat", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -282,6 +290,7 @@ export const registerRoomRoutes = (app: Express): void => {
     return res.json({ roomId, messages: record.chatMessages });
   });
 
+  // отправить сообщение в чат (и проверить угадано ли слово)
   app.post("/rooms/:roomId/chat", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -371,6 +380,7 @@ export const registerRoomRoutes = (app: Express): void => {
     return res.status(201).json({ roomId, message });
   });
 
+  // пропустить слово (минус очко)
   app.post("/rooms/:roomId/skip", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -414,6 +424,7 @@ export const registerRoomRoutes = (app: Express): void => {
     return res.status(200).json(buildRoomStatePayload(roomId, record));
   });
 
+  // удалить игрока из комнаты
   app.delete("/rooms/:roomId/players/:playerId", (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const playerId = getRouteParam(req.params.playerId);
@@ -439,6 +450,7 @@ export const registerRoomRoutes = (app: Express): void => {
     return res.status(200).json({ ok: true });
   });
 
+  // обновить выбранные коллекции для комнаты
   app.put("/rooms/:roomId/collections", async (req: Request, res: Response) => {
     const roomId = getRouteParam(req.params.roomId);
     const record = rooms.get(roomId);
@@ -478,6 +490,7 @@ export const registerRoomRoutes = (app: Express): void => {
     });
   });
 
+  // узнать в какой комнате сейчас игрок
   app.get("/players/:userId/room", (req: Request, res: Response) => {
     const userId = getRouteParam(req.params.userId);
     const entry = userRooms.get(userId);

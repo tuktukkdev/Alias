@@ -1,8 +1,10 @@
 import { API_BASE } from '../config/client'
 import type { ChatMessage, RoomJoinResponse, RoomState, SelectedCollection } from '../types/game'
 
+// общие заголовки для json запросов
 const JSON_HEADERS = { 'Content-Type': 'application/json' }
 
+// маппим данные комнаты в наш формат стейта
 export const mapRoomState = (data: RoomState): RoomState => ({
   roomId: data.roomId,
   room: data.room,
@@ -16,6 +18,7 @@ export const mapRoomState = (data: RoomState): RoomState => ({
   winner: data.winner,
 })
 
+// создание новой комнаты
 export const createRoomRequest = async (name: string, userId?: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms`, {
     method: 'POST',
@@ -24,6 +27,7 @@ export const createRoomRequest = async (name: string, userId?: string): Promise<
   })
 }
 
+// присоединение к существующей комнате
 export const joinRoomRequest = async (roomId: string, name: string, playerId?: string, userId?: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}/join`, {
     method: 'POST',
@@ -36,14 +40,17 @@ export const joinRoomRequest = async (roomId: string, name: string, playerId?: s
   })
 }
 
+// получение текущего состояния комнаты
 export const fetchRoomStateRequest = async (roomId: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}`)
 }
 
+// получение сообщений чата комнаты
 export const fetchRoomChatRequest = async (roomId: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}/chat`)
 }
 
+// обновление таймера хода
 export const updateTimerRequest = async (roomId: string, playerId: string, timer: number): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}/settings`, {
     method: 'PATCH',
@@ -52,6 +59,7 @@ export const updateTimerRequest = async (roomId: string, playerId: string, timer
   })
 }
 
+// обновление настроек комнаты (сложность, очки для победы итд)
 export const updateSettingsRequest = async (
   roomId: string,
   playerId: string,
@@ -64,6 +72,7 @@ export const updateSettingsRequest = async (
   })
 }
 
+// обновление выбранных коллекций слов в комнате
 export const updateCollectionsRequest = async (
   roomId: string,
   playerId: string,
@@ -76,10 +85,12 @@ export const updateCollectionsRequest = async (
   })
 }
 
+// получение списка дефолтных коллекций
 export const fetchDefaultCollectionsRequest = async (): Promise<Response> => {
   return fetch(`${API_BASE}/default-collections`)
 }
 
+// запуск игры хостом
 export const startGameRequest = async (roomId: string, playerId: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}/start`, {
     method: 'POST',
@@ -88,6 +99,7 @@ export const startGameRequest = async (roomId: string, playerId: string): Promis
   })
 }
 
+// отправка сообщения в чат (угадывание слова)
 export const sendChatMessageRequest = async (
   roomId: string,
   playerId: string,
@@ -100,6 +112,7 @@ export const sendChatMessageRequest = async (
   })
 }
 
+// пропуск текущего слова
 export const skipWordRequest = async (roomId: string, playerId: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}/skip`, {
     method: 'POST',
@@ -108,6 +121,7 @@ export const skipWordRequest = async (roomId: string, playerId: string): Promise
   })
 }
 
+// выход игрока из комнаты
 export const exitRoomRequest = async (roomId: string, playerId: string, userId?: string): Promise<Response> => {
   return fetch(`${API_BASE}/rooms/${roomId}/players/${playerId}`, {
     method: 'DELETE',
@@ -116,22 +130,27 @@ export const exitRoomRequest = async (roomId: string, playerId: string, userId?:
   })
 }
 
+// поиск комнаты юзера (для автореконнекта)
 export const findMyRoomRequest = async (userId: string): Promise<Response> => {
   return fetch(`${API_BASE}/players/${userId}/room`)
 }
 
+// парсим ответ при входе в комнату
 export const parseRoomJoinResponse = async (response: Response): Promise<RoomJoinResponse> => {
   return (await response.json()) as RoomJoinResponse
 }
 
+// парсим состояние комнаты
 export const parseRoomStateResponse = async (response: Response): Promise<RoomState> => {
   return (await response.json()) as RoomState
 }
 
+// парсим список сообщений чата
 export const parseChatListResponse = async (response: Response): Promise<{ messages: ChatMessage[] }> => {
   return (await response.json()) as { messages: ChatMessage[] }
 }
 
+// парсим одно сообщение чата
 export const parseChatMessageResponse = async (response: Response): Promise<{ message: ChatMessage }> => {
   return (await response.json()) as { message: ChatMessage }
 }

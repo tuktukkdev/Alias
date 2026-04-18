@@ -4,6 +4,7 @@ import type { AuthUser } from '../types/auth'
 import { ts } from '../i18n'
 import './CollectionsScreen.css'
 
+// интерфейс записи коллекции
 interface CollectionEntry {
   id: number
   name: string
@@ -12,32 +13,35 @@ interface CollectionEntry {
   amountOfCards: number
 }
 
+// интерфейс слова в коллекции
 interface WordEntry {
   id: number
   word: string
 }
 
+// пропсы компонента
 interface Props {
   user: AuthUser
   onBack: () => void
 }
 
+// экран пользовательских коллекций
 export default function CollectionsScreen({ user, onBack }: Props) {
   const userId = parseInt(user.id, 10)
 
-  // ── List view state ────────────────────────────────────────────────────────
+  // состояние списка коллекций
   const [collections, setCollections] = useState<CollectionEntry[]>([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
 
-  // ── Create form state ─────────────────────────────────────────────────────
+  // состояние формы создания коллекции
   const [createName, setCreateName] = useState('')
   const [createDesc, setCreateDesc] = useState('')
   const [createDiff, setCreateDiff] = useState(1)
   const [createError, setCreateError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
 
-  // ── Word editor state ─────────────────────────────────────────────────────
+  // состояние редактора слов
   const [openCollection, setOpenCollection] = useState<CollectionEntry | null>(null)
   const [, setWords] = useState<WordEntry[]>([])
   const [wordsLoading, setWordsLoading] = useState(false)
@@ -46,7 +50,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
   const [wordsSaveMsg, setWordsSaveMsg] = useState<string | null>(null)
   const saveMsgTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ── Load collections ───────────────────────────────────────────────────────
+  // загрузка коллекций при монтировании
   useEffect(() => {
     void loadCollections()
   }, [])
@@ -66,7 +70,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
     }
   }
 
-  // ── Create collection ─────────────────────────────────────────────────────
+  // хэндлер создания новой коллекции
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!createName.trim()) { setCreateError(ts('collections.nameRequired')); return }
@@ -95,7 +99,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
     }
   }
 
-  // ── Delete collection ─────────────────────────────────────────────────────
+  // хэндлер удаления коллекции
   async function handleDelete(colId: number) {
     try {
       const res = await fetch(`${API_BASE}/collections/${colId}`, {
@@ -107,11 +111,10 @@ export default function CollectionsScreen({ user, onBack }: Props) {
       setCollections((prev) => prev.filter((c) => c.id !== colId))
       if (openCollection?.id === colId) setOpenCollection(null)
     } catch {
-      // ignore
     }
   }
 
-  // ── Open word editor ──────────────────────────────────────────────────────
+  // хэндлер открытия редактора слов
   async function handleOpenCollection(col: CollectionEntry) {
     setOpenCollection(col)
     setWordsLoading(true)
@@ -130,7 +133,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
     }
   }
 
-  // ── Save words ────────────────────────────────────────────────────────────
+  // хэндлер сохранения слов
   async function handleSaveWords() {
     if (!openCollection) return
     setWordsSaving(true)
@@ -147,7 +150,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
       })
       if (!res.ok) throw new Error('Failed to save words')
       const data = (await res.json()) as { count: number }
-      // update local collection count
+      // обновляем кол-во карточек локально
       setCollections((prev) =>
         prev.map((c) =>
           c.id === openCollection.id ? { ...c, amountOfCards: data.count } : c
@@ -164,7 +167,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
     }
   }
 
-  // ── Word editor view ───────────────────────────────────────────────────────
+  // рендер редактора слов
   if (openCollection) {
     return (
       <main className="collectionsScreen">
@@ -220,7 +223,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
     )
   }
 
-  // ── List view ─────────────────────────────────────────────────────────────
+  // рендер списка коллекций
   return (
     <main className="collectionsScreen">
       <div className="collectionsPanel">
@@ -276,7 +279,7 @@ export default function CollectionsScreen({ user, onBack }: Props) {
           </div>
         )}
 
-        {/* Create form */}
+        {/* форма создания коллекции */}
         <div className="collectionsCreateSection">
           <h3 className="collectionsCreateTitle">{ts('collections.newCollection')}</h3>
           <form className="collectionsCreateForm" onSubmit={(e) => { void handleCreate(e) }}>

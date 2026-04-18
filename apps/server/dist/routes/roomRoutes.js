@@ -10,10 +10,13 @@ const broadcasters = {
     broadcastRoomState: broadcast_1.broadcastRoomState,
     broadcastActiveWord: broadcast_1.broadcastActiveWord,
 };
+// регистрация роутов для игровых комнат
 const registerRoomRoutes = (app) => {
+    // проверка что сервер работает
     app.get("/", (_, res) => {
         res.send("Server works");
     });
+    // эндпоинт для создания комнаты
     app.post("/rooms", (req, res) => {
         const name = String(req.body?.name ?? "").trim();
         const timer = Number(req.body?.timer ?? 60);
@@ -66,6 +69,7 @@ const registerRoomRoutes = (app) => {
             currentWord: null,
             waitingForWordResolutionAtZero: false,
             usedWords: new Set(),
+            wordPool: null,
             playerStats: new Map(),
             gameStartedAt: null,
             winner: null,
@@ -86,6 +90,7 @@ const registerRoomRoutes = (app) => {
             waitingForWordResolutionAtZero: false,
         });
     });
+    // присоединиться к комнате
     app.post("/rooms/:roomId/join", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -153,6 +158,7 @@ const registerRoomRoutes = (app) => {
             ...(0, roomService_1.buildRoomStatePayload)(roomId, record),
         });
     });
+    // получить состояние комнаты
     app.get("/rooms/:roomId", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -161,6 +167,7 @@ const registerRoomRoutes = (app) => {
         }
         return res.json((0, roomService_1.buildRoomStatePayload)(roomId, record));
     });
+    // обновить настройки комнаты (только хост)
     app.patch("/rooms/:roomId/settings", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -198,6 +205,7 @@ const registerRoomRoutes = (app) => {
         (0, broadcast_1.broadcastRoomState)(roomId, record);
         return res.json((0, roomService_1.buildRoomStatePayload)(roomId, record));
     });
+    // запустить игру в комнате
     app.post("/rooms/:roomId/start", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -213,13 +221,14 @@ const registerRoomRoutes = (app) => {
         }
         record.startRequested = true;
         if ((0, roomService_1.allPlayersConnected)(record)) {
-            (0, roomService_1.startRoomGame)(roomId, record, broadcasters);
+            void (0, roomService_1.startRoomGame)(roomId, record, broadcasters);
         }
         else {
             (0, broadcast_1.broadcastRoomState)(roomId, record);
         }
         return res.json((0, roomService_1.buildRoomStatePayload)(roomId, record));
     });
+    // получить историю чата комнаты
     app.get("/rooms/:roomId/chat", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -228,6 +237,7 @@ const registerRoomRoutes = (app) => {
         }
         return res.json({ roomId, messages: record.chatMessages });
     });
+    // отправить сообщение в чат (и проверить угадано ли слово)
     app.post("/rooms/:roomId/chat", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -245,6 +255,9 @@ const registerRoomRoutes = (app) => {
         }
         if (!text) {
             return res.status(400).json({ error: "text is required" });
+        }
+        if (text.length > 50) {
+            return res.status(400).json({ error: "Message too long (max 50 characters)." });
         }
         const message = {
             id: (0, common_1.createId)("msg"),
@@ -294,6 +307,7 @@ const registerRoomRoutes = (app) => {
         }
         return res.status(201).json({ roomId, message });
     });
+    // пропустить слово (минус очко)
     app.post("/rooms/:roomId/skip", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -327,6 +341,7 @@ const registerRoomRoutes = (app) => {
         (0, roomService_1.resolveCurrentWord)(roomId, record, broadcasters);
         return res.status(200).json((0, roomService_1.buildRoomStatePayload)(roomId, record));
     });
+    // удалить игрока из комнаты
     app.delete("/rooms/:roomId/players/:playerId", (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const playerId = (0, common_1.getRouteParam)(req.params.playerId);
@@ -346,6 +361,7 @@ const registerRoomRoutes = (app) => {
         (0, roomService_1.removePlayerPermanently)(roomId, playerId, broadcasters);
         return res.status(200).json({ ok: true });
     });
+    // обновить выбранные коллекции для комнаты
     app.put("/rooms/:roomId/collections", async (req, res) => {
         const roomId = (0, common_1.getRouteParam)(req.params.roomId);
         const record = serverState_1.rooms.get(roomId);
@@ -374,6 +390,7 @@ const registerRoomRoutes = (app) => {
             totalCollectionWords: totalWords,
         });
     });
+    // узнать в какой комнате сейчас игрок
     app.get("/players/:userId/room", (req, res) => {
         const userId = (0, common_1.getRouteParam)(req.params.userId);
         const entry = serverState_1.userRooms.get(userId);

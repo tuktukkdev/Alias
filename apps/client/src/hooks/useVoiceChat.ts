@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import type { Player, VolumeMenuState } from '../types/game'
 
+// конфиг webrtc с публичными stun серверами
 const RTC_CONFIG: RTCConfiguration = {
   iceServers: [
     { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
@@ -9,6 +10,7 @@ const RTC_CONFIG: RTCConfiguration = {
   iceCandidatePoolSize: 10,
 }
 
+// ограничения для микрофона, шумоподавление и эхоподавление
 const MIC_CONSTRAINTS: MediaStreamConstraints = {
   audio: {
     echoCancellation: true,
@@ -20,8 +22,10 @@ const MIC_CONSTRAINTS: MediaStreamConstraints = {
   } as MediaTrackConstraints & { latency?: number },
 }
 
+// целевой битрейт для opus кодека
 const OPUS_TARGET_BITRATE = 48000
 
+// параметры хука голосового чата
 interface UseVoiceChatOptions {
   chatSocketRef: React.RefObject<WebSocket | null>
   roomStarted: boolean
@@ -31,6 +35,7 @@ interface UseVoiceChatOptions {
   gameStartsIn: number
 }
 
+// хук для управления голосовым чатом через webrtc
 export function useVoiceChat({
   chatSocketRef,
   roomStarted,
@@ -39,9 +44,11 @@ export function useVoiceChat({
   currentTurnPlayerId,
   gameStartsIn,
 }: UseVoiceChatOptions) {
+  // громкость каждого игрока
   const [playerVolumes, setPlayerVolumes] = useState<Record<string, number>>({})
   const [volumeMenu, setVolumeMenu] = useState<VolumeMenuState | null>(null)
 
+  // рефы для webrtc соединений и аудио элементов
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const remoteAudioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map())
   const pendingIceRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map())
@@ -50,10 +57,12 @@ export function useVoiceChat({
   const playerVolumesRef = useRef<Record<string, number>>({})
   const volumeMenuRef = useRef<HTMLDivElement | null>(null)
 
+  // получаем громкость конкретного игрока, по умолчанию 1
   const getPlayerVolume = (targetPlayerId: string) => {
     return playerVolumes[targetPlayerId] ?? playerVolumesRef.current[targetPlayerId] ?? 1
   }
 
+  // обновляем громкость игрока в стейте и на аудио элементе
   const updatePlayerVolume = (targetPlayerId: string, volume: number) => {
     const normalizedVolume = Math.max(0, Math.min(1, volume))
 
@@ -69,6 +78,7 @@ export function useVoiceChat({
     }
   }
 
+  // открываем контекстное меню громкости по правому клику
   const openVolumeMenu = (event: MouseEvent, targetPlayerId: string, targetPlayerName: string) => {
     event.preventDefault()
     const menuWidth = 250
@@ -83,12 +93,14 @@ export function useVoiceChat({
     })
   }
 
+  // отправляем webrtc сигнал через вебсокет
   const sendVoiceSignal = (toPlayerId: string, signal: unknown) => {
     const socket = chatSocketRef.current
     if (!socket || socket.readyState !== WebSocket.OPEN) return
     socket.send(JSON.stringify({ type: 'voice_signal', toPlayerId, signal }))
   }
 
+  // останавливаем локальный аудио поток (микрофон)
   const stopLocalAudio = () => {
     const stream = localAudioStreamRef.current
     if (!stream) return
@@ -102,6 +114,7 @@ export function useVoiceChat({
     if (track) track.enabled = enabled
   }
 
+  // настраиваем битрейт и dtx на аудио отправителе
   const tuneAudioSender = async (sender: RTCRtpSender) => {
     const params = sender.getParameters()
     const encodings = params.encodings && params.encodings.length > 0 ? params.encodings : [{}]
@@ -114,10 +127,10 @@ export function useVoiceChat({
     try {
       await sender.setParameters(params)
     } catch {
-      // Some browsers may reject bitrate tuning.
     }
   }
 
+  // закрываем все webrtc соединения и аудио
   const clearVoiceConnections = () => {
     for (const [, connection] of peerConnectionsRef.current) {
       connection.onicecandidate = null
@@ -134,6 +147,7 @@ export function useVoiceChat({
     remoteAudioElementsRef.current.clear()
   }
 
+  // добавляем накопленные ice кандидаты после установки remote description
   const drainPendingIce = async (remotePlayerId: string, connection: RTCPeerConnection) => {
     const pendingCandidates = pendingIceRef.current.get(remotePlayerId) ?? []
     if (pendingCandidates.length === 0) return
@@ -142,11 +156,11 @@ export function useVoiceChat({
       try {
         await connection.addIceCandidate(new RTCIceCandidate(candidate))
       } catch {
-        // Candidate can be stale when peers reconnect.
       }
     }
   }
 
+  // создаем или получаем существующее peer соединение с игроком
   const getOrCreatePeerConnection = (remotePlayerId: string) => {
     const existing = peerConnectionsRef.current.get(remotePlayerId)
     if (existing) return existing
@@ -178,6 +192,7 @@ export function useVoiceChat({
     return connection
   }
 
+  // создаем соединения для всех игроков в комнате, удаляем лишние
   const ensurePeerConnectionsForRoom = (roomPlayers: Player[], ownPlayerId: string) => {
     const expectedRemoteIds = new Set(roomPlayers.filter((p) => p.id !== ownPlayerId).map((p) => p.id))
 
@@ -202,6 +217,7 @@ export function useVoiceChat({
     }
   }
 
+  // получаем доступ к микрофону юзера
   const ensureLocalAudioTrack = async () => {
     if (localAudioTrackRef.current && localAudioTrackRef.current.readyState === 'live') {
       return localAudioTrackRef.current
@@ -214,6 +230,7 @@ export function useVoiceChat({
     return audioTrack
   }
 
+  // добавляем или заменяем аудио трек в peer соединении
   const attachOrReplaceTrack = async (connection: RTCPeerConnection, track: MediaStreamTrack) => {
     const existingSender = connection.getSenders().find((s) => s.track?.kind === 'audio')
     if (existingSender) {
@@ -227,12 +244,14 @@ export function useVoiceChat({
     return true
   }
 
+  // создаем webrtc оффер для другого игрока
   const createOfferForPeer = async (remotePlayerId: string, connection: RTCPeerConnection) => {
     const offer = await connection.createOffer()
     await connection.setLocalDescription(offer)
     sendVoiceSignal(remotePlayerId, { type: 'offer', sdp: offer.sdp })
   }
 
+  // обрабатываем входящий webrtc сигнал от другого игрока
   const handleVoiceSignal = (fromPlayerId: string, signal: { type?: string; sdp?: string; candidate?: RTCIceCandidateInit }) => {
     const connection = getOrCreatePeerConnection(fromPlayerId)
 
@@ -266,12 +285,12 @@ export function useVoiceChat({
     }
   }
 
-  // Close volume menu when game stops
+  // закрываем меню громкости когда игра останавливается
   useEffect(() => {
     if (!roomStarted) setVolumeMenu(null)
   }, [roomStarted])
 
-  // Volume menu dismiss on click-outside / Escape
+  // закрываем меню громкости по клику вне или escape
   useEffect(() => {
     if (!volumeMenu) return
     const handlePointerDown = (event: PointerEvent) => {
@@ -289,7 +308,7 @@ export function useVoiceChat({
     }
   }, [volumeMenu])
 
-  // Voice setup per turn
+  // настройка голоса при каждом ходе
   useEffect(() => {
     if (!roomStarted || !playerId) {
       stopLocalAudio()
@@ -327,7 +346,6 @@ export function useVoiceChat({
           if (addedNew) await createOfferForPeer(peer.id, connection)
         }
       } catch {
-        // Allow microphone access to speak during your turn.
       }
     }
 
@@ -335,7 +353,7 @@ export function useVoiceChat({
     return () => { cancelled = true }
   }, [gameStartsIn, playerId, roomStarted, currentTurnPlayerId, players])
 
-  // Cleanup on unmount
+  // очистка при размонтировании
   useEffect(() => {
     return () => {
       stopLocalAudio()

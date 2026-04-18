@@ -1,3 +1,4 @@
+// модель пользователя
 export interface User {
   id: number;
   username: string;
@@ -6,22 +7,26 @@ export interface User {
   email: string;
 }
 
+// аватарка пользователя
 export interface UserPicture {
   userId: number;
   picturePath: string;
   format: string;
 }
 
+// связь дружбы между пользователями
 export interface UserFriend {
   userId: number;
   friendId: number;
 }
 
+// заявка в друзья
 export interface UserFriendRequest {
   userIdFrom: number;
   userIdTo: number;
 }
 
+// статистика пользователя
 export interface UserStats {
   userId: number;
   guessed: number;
@@ -30,6 +35,7 @@ export interface UserStats {
   losses: number;
 }
 
+// стандартная коллекция слов
 export interface DefaultCollection {
   id: number;
   name: string;
@@ -38,16 +44,19 @@ export interface DefaultCollection {
   difficulty: number;
 }
 
+// тег коллекции
 export interface Tag {
   id: number;
   name: string;
 }
 
+// связь коллекции и тега
 export interface CollectionTag {
   collectionId: number;
   tagId: number;
 }
 
+// пользовательская коллекция
 export interface UserCollection {
   id: number;
   name: string;
@@ -57,6 +66,7 @@ export interface UserCollection {
   creatorId: number;
 }
 
+// карточка из пользовательской коллекции
 export interface UserCard {
   id: number;
   word: string;
@@ -64,17 +74,20 @@ export interface UserCard {
   userCollectionId: number;
 }
 
+// карточка слова
 export interface Card {
   id: number;
   word: string;
   difficulty: number;
 }
 
+// связь карточки и коллекции
 export interface CardsCollection {
   collectionId: number;
   cardId: number;
 }
 
+// запись об игре
 export interface Game {
   gameId: number;
   startedDt: Date;

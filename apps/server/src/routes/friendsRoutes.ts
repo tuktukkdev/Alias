@@ -9,8 +9,9 @@ import {
   sendFriendRequest,
 } from "../services/friendsService";
 
+// регистрация роутов для друзей
 export const registerFriendsRoutes = (app: Express): void => {
-  /** GET /friends/:userId — full friends/pending/sent lists */
+  // получить списки друзей, входящих и исходящих заявок
   app.get("/friends/:userId", async (req: Request, res: Response) => {
     const userId = Number(req.params.userId);
     if (!userId) return res.status(400).json({ error: "userId is required" });
@@ -19,7 +20,7 @@ export const registerFriendsRoutes = (app: Express): void => {
     return res.json(data);
   });
 
-  /** GET /friends/:userId/pending-count — just the pending count */
+  // получить количество входящих заявок
   app.get("/friends/:userId/pending-count", async (req: Request, res: Response) => {
     const userId = Number(req.params.userId);
     if (!userId) return res.status(400).json({ error: "userId is required" });
@@ -28,7 +29,7 @@ export const registerFriendsRoutes = (app: Express): void => {
     return res.json({ count });
   });
 
-  /** POST /friends/request — send a friend request by target username */
+  // отправить заявку в друзья по имени пользователя
   app.post("/friends/request", async (req: Request, res: Response) => {
     const fromId = Number(req.body?.userId);
     const toUsername = String(req.body?.username ?? "").trim();
@@ -57,7 +58,7 @@ export const registerFriendsRoutes = (app: Express): void => {
     return res.status(201).json({ ok: true });
   });
 
-  /** POST /friends/accept — accept a pending request */
+  // принять заявку в друзья
   app.post("/friends/accept", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     const fromId = Number(req.body?.fromId);
@@ -71,7 +72,7 @@ export const registerFriendsRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
-  /** POST /friends/decline — decline a pending request */
+  // отклонить заявку в друзья
   app.post("/friends/decline", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     const fromId = Number(req.body?.fromId);
@@ -85,7 +86,7 @@ export const registerFriendsRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
-  /** POST /friends/cancel — cancel a sent request */
+  // отменить отправленную заявку
   app.post("/friends/cancel", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     const toId = Number(req.body?.toId);
@@ -99,7 +100,7 @@ export const registerFriendsRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
-  /** DELETE /friends/remove — remove a friend */
+  // удалить из друзей
   app.delete("/friends/remove", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     const friendId = Number(req.body?.friendId);

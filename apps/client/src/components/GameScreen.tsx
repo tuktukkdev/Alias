@@ -2,6 +2,7 @@ import type { ChatMessage, Player, RoomState, VolumeMenuState } from '../types/g
 import { ts } from '../i18n'
 import './GameScreen.css'
 
+// пропсы экрана игры
 interface GameScreenProps {
   roomState: RoomState
   playerId: string | null
@@ -22,6 +23,7 @@ interface GameScreenProps {
   onExitRoom: () => void
 }
 
+// формируем текст таймера хода
 const getTurnTimerText = (
   roomState: RoomState,
   gameStartsIn: number,
@@ -53,6 +55,7 @@ const getTurnTimerText = (
   )
 }
 
+// компонент экрана игры с чатом, табло и карточкой слова
 export function GameScreen({
   roomState,
   playerId,

@@ -1,3 +1,4 @@
+// сервис кеширования — загружаем слова в redis чтобы не дёргать базу
 import { prisma } from "../db/prisma";
 import { getRedisClient } from "../db/redis";
 
@@ -5,10 +6,7 @@ const COL_DEFAULT_KEY = (id: number) => `col:default:${id}`;
 const COL_GENERAL_KEY = (difficulty: number | null) =>
   difficulty !== null ? `col:general:${difficulty}` : "col:general:all";
 
-/**
- * Preload all default collection word lists and general card pools into Redis.
- * Called once on server startup. Safe to call if Redis is unavailable (no-op).
- */
+// предзагрузка дефолтных коллекций в redis при старте сервера
 export async function preloadDefaultCollections(): Promise<void> {
   const redis = getRedisClient();
   if (!redis) {
@@ -18,6 +16,7 @@ export async function preloadDefaultCollections(): Promise<void> {
 
   const collections = await prisma.defaultCollection.findMany({ select: { id: true } });
 
+  // проходим по коллекциям и кладём слова в кеш
   for (const col of collections) {
     const rows = await prisma.card.findMany({
       where: { links: { some: { collectionId: col.id } } },
@@ -26,6 +25,7 @@ export async function preloadDefaultCollections(): Promise<void> {
     await redis.set(COL_DEFAULT_KEY(col.id), JSON.stringify(rows.map((r) => r.word)));
   }
 
+  // кешируем слова по сложностям 1, 2, 3
   for (const diff of [1, 2, 3] as const) {
     const rows = await prisma.card.findMany({
       where: { difficulty: diff },
@@ -40,10 +40,7 @@ export async function preloadDefaultCollections(): Promise<void> {
   console.log(`[Cache] Preloaded ${collections.length} default collections into Redis`);
 }
 
-/**
- * Get all words for a default collection.
- * Uses Redis when available, falls back to DB.
- */
+// берём слова коллекции из кеша, если нет — из базы
 export async function getDefaultCollectionWordsCached(collectionId: number): Promise<string[]> {
   const redis = getRedisClient();
   if (redis) {
@@ -62,10 +59,7 @@ export async function getDefaultCollectionWordsCached(collectionId: number): Pro
   return rows.map((r) => r.word);
 }
 
-/**
- * Get general card words filtered by difficulty (or all words when difficulty is null).
- * Uses Redis when available, falls back to DB.
- */
+// берём общие слова по сложности из кеша или базы
 export async function getGeneralWordsCached(difficulty: number | null): Promise<string[]> {
   const redis = getRedisClient();
   if (redis) {

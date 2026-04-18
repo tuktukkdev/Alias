@@ -1,14 +1,16 @@
+// базовый урл апи из env переменной
 const _rawApiBase = import.meta.env.VITE_API_BASE as string | undefined
 
-// In production (Docker): VITE_API_BASE='' → empty string, nginx proxies API on same domain.
-// In development:         VITE_API_BASE=http://localhost:3000 (set via .env.development).
+// в проде пустая строка (nginx проксирует), в деве localhost:3000
 export const API_BASE = _rawApiBase ?? 'http://localhost:3000'
 
-// WebSocket base: derives ws(s):// from API_BASE.
-// If API_BASE is empty (production), WS_BASE is null → App.tsx uses window.location.host.
+// вебсокет база, делаем из http -> ws, если пусто то null и берем из window.location
 export const WS_BASE: string | null = API_BASE
   ? API_BASE.replace(/^https/, 'wss').replace(/^http/, 'ws')
   : null
 
+// префикс пути комнаты в урле
 export const ROOM_PATH_PREFIX = '/room/'
+
+// ключ для хранения сессии комнаты в localStorage
 export const SESSION_STORAGE_KEY = 'alias-room-session'

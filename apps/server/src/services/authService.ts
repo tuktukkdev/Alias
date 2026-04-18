@@ -1,3 +1,4 @@
+// сервис для авторизации и работы с пользователями
 import { randomBytes, scrypt, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { prisma } from "../db/prisma";
@@ -7,12 +8,14 @@ const scryptAsync = promisify(scrypt);
 const SALT_LEN = 16;
 const KEY_LEN = 64;
 
+// хэшируем пароль — генерируем соль и прогоняем через scrypt
 async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(SALT_LEN).toString("hex");
   const derivedKey = (await scryptAsync(password, salt, KEY_LEN)) as Buffer;
   return `${salt}:${derivedKey.toString("hex")}`;
 }
 
+// проверяем пароль — достаём соль, хэшируем и сравниваем через timingSafeEqual
 async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;
@@ -35,6 +38,7 @@ export interface AuthFailure {
   code: "USERNAME_TAKEN" | "EMAIL_TAKEN" | "USER_NOT_FOUND" | "INVALID_PASSWORD";
 }
 
+// регистрация нового пользователя
 export async function registerUser(
   username: string,
   email: string,
@@ -67,6 +71,7 @@ export async function registerUser(
   return { ok: true, id: user.id, username: user.username, email: user.email, emailVerified: user.emailVerified };
 }
 
+// вход по логину и паролю
 export async function loginUser(
   username: string,
   password: string
@@ -89,6 +94,7 @@ export interface UpdateUsernameFailure {
   code: "USER_NOT_FOUND" | "USERNAME_TAKEN";
 }
 
+// смена имени пользователя
 export async function updateUsername(
   userId: number,
   newUsername: string
@@ -114,6 +120,7 @@ export interface UpdatePasswordFailure {
   code: "USER_NOT_FOUND" | "INVALID_PASSWORD";
 }
 
+// смена пароля (нужен текущий пароль для подтверждения)
 export async function updatePassword(
   userId: number,
   currentPassword: string,
@@ -137,6 +144,7 @@ export interface UserStats {
   losses: number;
 }
 
+// получаем статистику игрока
 export async function getUserStats(userId: number): Promise<UserStats | null> {
   const stats = await prisma.userStats.findUnique({ where: { userId } });
   if (!stats) return null;
@@ -148,6 +156,7 @@ export async function getUserStats(userId: number): Promise<UserStats | null> {
   };
 }
 
+// получаем ссылку на аватарку пользователя
 export async function getUserAvatarUrl(userId: number): Promise<string | null> {
   const pic = await prisma.userPicture.findUnique({ where: { userId } });
   if (!pic) return null;
@@ -155,6 +164,7 @@ export async function getUserAvatarUrl(userId: number): Promise<string | null> {
   return `${base}/uploads/avatars/${pic.picturePath}`;
 }
 
+// сохраняем или обновляем аватарку
 export async function upsertUserPicture(
   userId: number,
   filename: string,
@@ -167,21 +177,25 @@ export async function upsertUserPicture(
   });
 }
 
+// получаем путь к текущей аватарке
 export async function getExistingPicturePath(userId: number): Promise<string | null> {
   const pic = await prisma.userPicture.findUnique({ where: { userId } });
   return pic?.picturePath ?? null;
 }
 
+// получаем email пользователя
 export async function getUserEmail(userId: number): Promise<string | null> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
   return user?.email ?? null;
 }
 
+// проверяем подтверждён ли email
 export async function getUserEmailVerified(userId: number): Promise<boolean | null> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { emailVerified: true } });
   return user?.emailVerified ?? null;
 }
 
+// повторно отправить письмо для подтверждения
 export async function resendVerificationEmail(userId: number): Promise<{ ok: true; email: string; token: string } | { ok: false; code: "USER_NOT_FOUND" | "ALREADY_VERIFIED" }> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, emailVerified: true } });
   if (!user) return { ok: false, code: "USER_NOT_FOUND" };
@@ -192,15 +206,15 @@ export async function resendVerificationEmail(userId: number): Promise<{ ok: tru
   return { ok: true, email: user.email, token };
 }
 
-// ── Email verification ────────────────────────────────────
-
+// генерируем токен для подтверждения email (живёт 24 часа)
 export async function createEmailVerificationToken(userId: number): Promise<string> {
   const token = randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 h
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   await prisma.emailToken.create({ data: { userId, token, type: "verify", expiresAt } });
   return token;
 }
 
+// проверяем токен подтверждения email
 export async function verifyEmailToken(
   token: string,
 ): Promise<{ ok: true } | { ok: false; code: "INVALID_TOKEN" | "EXPIRED_TOKEN" }> {
@@ -215,8 +229,7 @@ export async function verifyEmailToken(
   return { ok: true };
 }
 
-// ── Password reset ────────────────────────────────────────
-
+// запрос на сброс пароля — генерируем токен (живёт 1 час)
 export async function requestPasswordReset(
   email: string,
 ): Promise<{ ok: true; userEmail: string; token: string } | { ok: false; code: "USER_NOT_FOUND" }> {
@@ -226,12 +239,13 @@ export async function requestPasswordReset(
   await prisma.emailToken.deleteMany({ where: { userId: user.id, type: "reset" } });
 
   const token = randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 h
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
   await prisma.emailToken.create({ data: { userId: user.id, token, type: "reset", expiresAt } });
 
   return { ok: true, userEmail: user.email, token };
 }
 
+// сброс пароля по токену из письма
 export async function resetPasswordViaToken(
   token: string,
   newPassword: string,

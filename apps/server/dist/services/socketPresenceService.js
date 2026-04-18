@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasAnotherSocketForPlayer = void 0;
+// проверка наличия других сокетов игрока в комнате
 const ws_1 = require("ws");
 const serverState_1 = require("../state/serverState");
+// есть ли у игрока ещё один активный сокет (кроме текущего)
 const hasAnotherSocketForPlayer = (roomId, playerId, ignoredSocket) => {
     const sockets = serverState_1.roomSockets.get(roomId);
     if (!sockets) {

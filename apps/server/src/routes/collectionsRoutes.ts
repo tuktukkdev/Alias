@@ -8,8 +8,9 @@ import {
 } from "../services/collectionsService";
 import { prisma } from "../db/prisma";
 
+// регистрация роутов для коллекций слов
 export function registerCollectionsRoutes(app: Express): void {
-  /** GET /collections/:userId — list user's collections */
+  // получить коллекции пользователя
   app.get("/collections/:userId", async (req: Request, res: Response) => {
     const userId = parseInt(String(req.params.userId), 10);
     if (isNaN(userId)) return res.status(400).json({ error: "Invalid userId" });
@@ -17,7 +18,7 @@ export function registerCollectionsRoutes(app: Express): void {
     return res.json(collections);
   });
 
-  /** POST /collections — create a collection */
+  // создать новую коллекцию
   app.post("/collections", async (req: Request, res: Response) => {
     const { userId, name, description, difficulty } = req.body as {
       userId?: unknown;
@@ -41,7 +42,7 @@ export function registerCollectionsRoutes(app: Express): void {
     return res.status(201).json(collection);
   });
 
-  /** DELETE /collections/:collectionId — delete a collection */
+  // удалить коллекцию
   app.delete("/collections/:collectionId", async (req: Request, res: Response) => {
     const collectionId = parseInt(String(req.params.collectionId), 10);
     const userId = parseInt(String(req.body?.userId ?? ""), 10);
@@ -57,7 +58,7 @@ export function registerCollectionsRoutes(app: Express): void {
     return res.json({ ok: true });
   });
 
-  /** GET /collections/:collectionId/words — get words for a collection */
+  // получить слова из коллекции
   app.get("/collections/:collectionId/words", async (req: Request, res: Response) => {
     const collectionId = parseInt(String(req.params.collectionId), 10);
     const userId = parseInt(String(req.query.userId ?? ""), 10);
@@ -69,7 +70,7 @@ export function registerCollectionsRoutes(app: Express): void {
     return res.json(words);
   });
 
-  /** PUT /collections/:collectionId/words — replace all words */
+  // заменить все слова в коллекции
   app.put("/collections/:collectionId/words", async (req: Request, res: Response) => {
     const collectionId = parseInt(String(req.params.collectionId), 10);
     const { userId, words } = req.body as { userId?: unknown; words?: unknown };
@@ -85,7 +86,7 @@ export function registerCollectionsRoutes(app: Express): void {
     return res.json(result);
   });
 
-  /** GET /default-collections — list all default collections */
+  // получить список дефолтных коллекций
   app.get("/default-collections", async (_req: Request, res: Response) => {
     const collections = await prisma.defaultCollection.findMany({
       select: {

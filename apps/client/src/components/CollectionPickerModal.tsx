@@ -5,6 +5,7 @@ import type { SelectedCollection } from '../types/game'
 import { ts } from '../i18n'
 import './CollectionPickerModal.css'
 
+// запись коллекции для отображения
 interface CollectionEntry {
   id: number
   name: string
@@ -21,6 +22,7 @@ interface Props {
   onCancel: () => void
 }
 
+// проверка совпадения коллекции с поисковым запросом
 function matchesSearch(c: CollectionEntry, query: string): boolean {
   if (!query.trim()) return true
   const terms = query.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean)
@@ -34,7 +36,9 @@ function matchesSearch(c: CollectionEntry, query: string): boolean {
   })
 }
 
+// модалка выбора коллекций слов
 export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }: Props) {
+  // списки дефолтных и пользовательских коллекций
   const [defaultCollections, setDefaultCollections] = useState<CollectionEntry[]>([])
   const [customCollections, setCustomCollections] = useState<CollectionEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -45,6 +49,7 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
     void loadAll()
   }, [])
 
+  // загрузка всех коллекций с сервера
   async function loadAll() {
     setLoading(true)
     try {
@@ -59,16 +64,19 @@ export function CollectionPickerModal({ userId, selected, onConfirm, onCancel }:
     }
   }
 
+  // проверяем выбрана ли коллекция
   function isSelected(id: number, type: 'default' | 'custom') {
     return draft.some((c) => c.id === id && c.type === type)
   }
 
+  // переключаем выбор коллекции
   function toggle(id: number, type: 'default' | 'custom') {
     setDraft((prev) =>
       isSelected(id, type) ? prev.filter((c) => !(c.id === id && c.type === type)) : [...prev, { id, type }],
     )
   }
 
+  // фильтрация по поиску
   const filteredDefault = useMemo(() => defaultCollections.filter((c) => matchesSearch(c, search)), [defaultCollections, search])
   const filteredCustom = useMemo(() => customCollections.filter((c) => matchesSearch(c, search)), [customCollections, search])
 

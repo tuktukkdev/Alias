@@ -2,12 +2,15 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ts } from '../i18n'
 import './AuthModal.css'
 
+// пропсы модалки сброса пароля
 interface ResetPasswordModalProps {
   onClose: () => void
   onSubmit: (newPassword: string) => Promise<string | null>
 }
 
+// модалка для установки нового пароля
 export function ResetPasswordModal({ onClose, onSubmit }: ResetPasswordModalProps) {
+  // стейты формы
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -19,6 +22,7 @@ export function ResetPasswordModal({ onClose, onSubmit }: ResetPasswordModalProp
     dialogRef.current?.showModal()
   }, [])
 
+  // обработка отправки формы нового пароля
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')

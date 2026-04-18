@@ -1,10 +1,12 @@
 import { ts } from '../i18n'
 import './Footer.css'
 
+// пропсы футера
 interface FooterProps {
   onNavigate: (page: 'howtoplay' | 'terms') => void
 }
 
+// компонент футера с навигацией
 export function Footer({ onNavigate }: FooterProps) {
   return (
     <footer className="siteFooter">

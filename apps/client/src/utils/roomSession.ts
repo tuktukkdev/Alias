@@ -1,6 +1,7 @@
 import { SESSION_STORAGE_KEY } from '../config/client'
 import type { StoredRoomSession } from '../types/game'
 
+// достаем сохраненную сессию комнаты из localStorage для автореконнекта
 export const getStoredRoomSession = (): StoredRoomSession | null => {
   try {
     const rawValue = window.localStorage.getItem(SESSION_STORAGE_KEY)
@@ -23,10 +24,12 @@ export const getStoredRoomSession = (): StoredRoomSession | null => {
   }
 }
 
+// сохраняем сессию комнаты чтоб при перезагрузке не потерять
 export const setStoredRoomSession = (session: StoredRoomSession): void => {
   window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
 }
 
+// очищаем сессию когда выходим из комнаты
 export const clearStoredRoomSession = (): void => {
   window.localStorage.removeItem(SESSION_STORAGE_KEY)
 }

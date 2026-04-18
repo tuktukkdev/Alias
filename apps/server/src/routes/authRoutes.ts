@@ -21,7 +21,9 @@ import {
 } from "../services/authService";
 import { sendPasswordResetEmail, sendVerificationEmail } from "../services/emailService";
 
+// регистрируем все роуты для авторизации и профиля
 export const registerAuthRoutes = (app: Express): void => {
+  // эндпоинт для регистрации юзера
   app.post("/auth/register", async (req: Request, res: Response) => {
     const username = String(req.body?.username ?? "").trim();
     const email = String(req.body?.email ?? "").trim();
@@ -70,6 +72,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.status(201).json({ id: result.id, username: result.username, email: result.email, emailVerified: result.emailVerified, avatarUrl: null });
   });
 
+  // эндпоинт для логина
   app.post("/auth/login", async (req: Request, res: Response) => {
     const username = String(req.body?.username ?? "").trim();
     const password = String(req.body?.password ?? "");
@@ -88,6 +91,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.status(200).json({ id: result.id, username: result.username, email: result.email, emailVerified: result.emailVerified, avatarUrl });
   });
 
+  // обновление юзернейма в профиле
   app.patch("/auth/profile/username", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     const newUsername = String(req.body?.username ?? "").trim();
@@ -117,6 +121,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ username: result.username });
   });
 
+  // смена пароля через профиль
   app.patch("/auth/profile/password", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     const currentPassword = String(req.body?.currentPassword ?? "");
@@ -143,6 +148,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
+  // получаем инфу о профиле юзера
   app.get("/auth/profile/:userId", async (req: Request, res: Response) => {
     const userId = Number(req.params.userId);
     if (!userId) {
@@ -155,6 +161,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ emailVerified });
   });
 
+  // получаем статистику юзера
   app.get("/auth/stats/:userId", async (req: Request, res: Response) => {
     const userId = Number(req.params.userId);
     if (!userId) {
@@ -169,6 +176,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json(stats);
   });
 
+  // загрузка аватарки юзера
   app.post("/auth/profile/picture", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     const imageData = String(req.body?.imageData ?? "");
@@ -183,7 +191,7 @@ export const registerAuthRoutes = (app: Express): void => {
     }
 
     const base64Data = match[3];
-    // ~2MB limit (base64 is ~4/3 larger than binary)
+    // лимит ~2мб на картинку
     if (base64Data.length > 2_800_000) {
       return res.status(413).json({ error: "Image too large. Maximum size is 2 MB." });
     }
@@ -194,7 +202,7 @@ export const registerAuthRoutes = (app: Express): void => {
     const avatarsDir = path.join(__dirname, "..", "..", "uploads", "avatars");
     fs.mkdirSync(avatarsDir, { recursive: true });
 
-    // Remove old file if it has a different extension
+    // удаляем старый файл если расширение поменялось
     const oldPath = await getExistingPicturePath(userId);
     if (oldPath && oldPath !== filename) {
       const oldFilePath = path.join(avatarsDir, oldPath);
@@ -211,6 +219,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ avatarUrl });
   });
 
+  // удаление аватарки
   app.delete("/auth/profile/picture", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     if (!userId) return res.status(400).json({ error: "userId is required" });
@@ -224,6 +233,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
+  // повторная отправка письма для верификации почты
   app.post("/auth/resend-verification", async (req: Request, res: Response) => {
     const userId = Number(req.body?.userId);
     if (!userId) return res.status(400).json({ error: "userId is required" });
@@ -239,6 +249,7 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
+  // подтверждение почты по токену из письма
   app.post("/auth/verify-email", async (req: Request, res: Response) => {
     const token = String(req.body?.token ?? "").trim();
     if (!token) return res.status(400).json({ error: "token is required" });
@@ -253,18 +264,20 @@ export const registerAuthRoutes = (app: Express): void => {
     return res.json({ ok: true });
   });
 
+  // запрос на сброс пароля, шлём письмо
   app.post("/auth/request-password-reset", async (req: Request, res: Response) => {
     const email = String(req.body?.email ?? "").trim();
     if (!email) return res.status(400).json({ error: "email is required" });
 
     const result = await requestPasswordReset(email);
-    // Always 200 to prevent email enumeration
+    // всегда 200 чтобы нельзя было перебирать почты
     if (result.ok) {
       sendPasswordResetEmail(result.userEmail, result.token).catch(() => {});
     }
     return res.json({ ok: true });
   });
 
+  // сброс пароля по токену из письма
   app.post("/auth/reset-password", async (req: Request, res: Response) => {
     const token = String(req.body?.token ?? "").trim();
     const newPassword = String(req.body?.newPassword ?? "");

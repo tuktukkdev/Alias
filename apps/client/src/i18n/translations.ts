@@ -3,8 +3,9 @@ import { currentLang } from './i18n'
 
 type Dict = Record<string, string | readonly string[]>
 
+// словарь переводов
 const en = {
-  // ── Header ──
+  // шапка
   'header.logo': 'Alias',
   'header.logoAria': 'Go to main page',
   'header.userMenuAria': 'User menu',
@@ -16,7 +17,7 @@ const en = {
   'header.login': 'Log in',
   'header.register': 'Register',
 
-  // ── Auth Modal ──
+  // модалка авторизации
   'auth.loginTab': 'Log in',
   'auth.registerTab': 'Register',
   'auth.resetPasswordTab': 'Reset password',
@@ -40,7 +41,7 @@ const en = {
   'auth.enterEmail': 'Please enter your email address.',
   'auth.somethingWrong': 'Something went wrong. Please try again.',
 
-  // ── Reset Password Modal ──
+  // сброс пароля
   'resetPw.newPassword': 'New password',
   'resetPw.confirmPassword': 'Confirm password',
   'resetPw.passwordMinLength': 'Password must be at least 6 characters.',
@@ -50,7 +51,7 @@ const en = {
   'resetPw.success': 'Password updated! You can now log in with your new password.',
   'resetPw.login': 'Log in',
 
-  // ── Join Screen ──
+  // экран входа
   'join.title': 'ALIAS',
   'join.subtitle': 'Will your team understand you at a glance? Prove it!',
   'join.name': 'Name',
@@ -58,7 +59,7 @@ const en = {
   'join.play': 'Play',
   'join.createRoom': 'Create Room',
 
-  // ── Room Screen ──
+  // экран комнаты
   'room.title': 'Room',
   'room.code': 'Code:',
   'room.copyCode': 'Copy code',
@@ -82,7 +83,7 @@ const en = {
   'room.wsBlocked': '⚠️ Real-time connection blocked. Likely cause: your router firewall or antivirus (e.g. Kaspersky, ESET) is filtering WebSocket traffic. Try: disable antivirus network protection, reboot your router, or switch to mobile hotspot / VPN.',
   'room.exitRoom': 'Exit Room',
 
-  // ── Game Screen ──
+  // экран игры
   'game.startsIn': 'Game starts in',
   'game.timeLeft': 'Time Left:',
   'game.waitingForWord': 'Waiting for "{name}" word to be guessed or skipped',
@@ -111,7 +112,7 @@ const en = {
   'game.wins': '🏆 {name} wins!',
   'game.mainMenu': 'Main Menu',
 
-  // ── Collections Screen ──
+  // коллекции
   'collections.back': '← Back',
   'collections.title': 'Custom Collections',
   'collections.loading': 'Loading…',
@@ -137,7 +138,7 @@ const en = {
   'collections.savedWords': 'Saved {count} word(s).',
   'collections.saveFailed': 'Failed to save.',
 
-  // ── Collection Picker Modal ──
+  // выбор коллекций
   'picker.title': 'Choose Collections',
   'picker.searchPlaceholder': 'Search by name, description, difficulty (1–3), or tags…',
   'picker.loading': 'Loading...',
@@ -150,7 +151,7 @@ const en = {
   'picker.cancel': 'Cancel',
   'picker.confirm': 'Confirm',
 
-  // ── Friends Screen ──
+  // друзья
   'friends.back': '← Back',
   'friends.title': 'Friends',
   'friends.loading': 'Loading…',
@@ -173,7 +174,7 @@ const en = {
   'friends.serverError': 'Could not reach the server.',
   'friends.requestSent': 'Friend request sent to {name}.',
 
-  // ── Profile Screen ──
+  // профиль
   'profile.back': '← Back',
   'profile.title': 'Profile',
   'profile.currentUsername': 'Current username:',
@@ -218,7 +219,7 @@ const en = {
   'profile.updatePassword': 'Update Password',
   'profile.serverError': 'Could not reach the server.',
 
-  // ── Stats Modal ──
+  // статистика
   'stats.title': 'Stats — {name}',
   'stats.closeAria': 'Close',
   'stats.loading': 'Loading…',
@@ -229,13 +230,13 @@ const en = {
   'stats.wins': 'Wins',
   'stats.losses': 'Losses',
 
-  // ── Footer ──
+  // футер
   'footer.logo': 'Alias',
   'footer.howToPlay': 'How to Play',
   'footer.terms': 'Terms of Service',
   'footer.copyright': 'Valentina Vladimirova · 2026',
 
-  // ── App (status messages) ──
+  // приложение (статусы)
   'app.enterName': 'Please enter your name first.',
   'app.enterRoomCode': 'Please enter a room code.',
   'app.reconnecting': 'Reconnecting to room...',
@@ -266,7 +267,7 @@ const en = {
   'app.resetFailed': 'Failed to reset password.',
   'app.serverError': 'Could not reach the server.',
 
-  // ── How To Play ──
+  // как играть
   'howToPlay.back': '← Back',
   'howToPlay.title': 'How to Play',
   'howToPlay.whatIsTitle': 'What is Alias?',
@@ -290,7 +291,7 @@ const en = {
   'howToPlay.tip3': 'Be creative — vivid descriptions are your best tool online!',
   'howToPlay.tip4': "Don't waste too much time on a hard word — skip it and move on.",
 
-  // ── Terms of Service ──
+  // условия использования
   'terms.back': '← Back',
   'terms.title': 'Terms of Service',
   'terms.lastUpdated': 'Last updated: April 13, 2026',
@@ -326,12 +327,12 @@ const en = {
   'terms.s10title': '10. Contact',
   'terms.s10text': "For questions about these Terms, please reach out through the game's support channels.",
 
-  // ── Language Switcher ──
+  // язык
   'lang.switch': 'RU',
 } as const
 
 const ru: Dict = {
-  // ── Header ──
+  // шапка
   'header.logo': 'Alias',
   'header.logoAria': 'На главную',
   'header.userMenuAria': 'Меню пользователя',
@@ -343,7 +344,7 @@ const ru: Dict = {
   'header.login': 'Войти',
   'header.register': 'Регистрация',
 
-  // ── Auth Modal ──
+  // модалка авторизации
   'auth.loginTab': 'Вход',
   'auth.registerTab': 'Регистрация',
   'auth.resetPasswordTab': 'Сброс пароля',
@@ -367,7 +368,7 @@ const ru: Dict = {
   'auth.enterEmail': 'Пожалуйста, введите адрес эл. почты.',
   'auth.somethingWrong': 'Что-то пошло не так. Попробуйте ещё раз.',
 
-  // ── Reset Password Modal ──
+  // сброс пароля
   'resetPw.newPassword': 'Новый пароль',
   'resetPw.confirmPassword': 'Подтвердите пароль',
   'resetPw.passwordMinLength': 'Пароль должен содержать не менее 6 символов.',
@@ -377,7 +378,7 @@ const ru: Dict = {
   'resetPw.success': 'Пароль обновлён! Теперь вы можете войти с новым паролем.',
   'resetPw.login': 'Войти',
 
-  // ── Join Screen ──
+  // экран входа
   'join.title': 'ALIAS',
   'join.subtitle': 'Поймёт ли тебя команда с полуслова? Докажи!',
   'join.name': 'Имя',
@@ -385,7 +386,7 @@ const ru: Dict = {
   'join.play': 'Играть',
   'join.createRoom': 'Создать комнату',
 
-  // ── Room Screen ──
+  // экран комнаты
   'room.title': 'Комната',
   'room.code': 'Код:',
   'room.copyCode': 'Копировать код',
@@ -409,7 +410,7 @@ const ru: Dict = {
   'room.wsBlocked': '⚠️ Соединение заблокировано. Возможная причина: файрвол или антивирус (напр. Kaspersky, ESET) фильтрует WebSocket трафик. Попробуйте: отключить сетевую защиту антивируса, перезагрузить роутер или переключиться на мобильный хотспот / VPN.',
   'room.exitRoom': 'Выйти из комнаты',
 
-  // ── Game Screen ──
+  // экран игры
   'game.startsIn': 'Игра начнётся через',
   'game.timeLeft': 'Осталось:',
   'game.waitingForWord': 'Ожидание: слово «{name}» должно быть угадано или пропущено',
@@ -438,7 +439,7 @@ const ru: Dict = {
   'game.wins': '🏆 {name} победил!',
   'game.mainMenu': 'Главное меню',
 
-  // ── Collections Screen ──
+  // коллекции
   'collections.back': '← Назад',
   'collections.title': 'Мои коллекции',
   'collections.loading': 'Загрузка…',
@@ -464,7 +465,7 @@ const ru: Dict = {
   'collections.savedWords': 'Сохранено слов: {count}.',
   'collections.saveFailed': 'Не удалось сохранить.',
 
-  // ── Collection Picker Modal ──
+  // выбор коллекций
   'picker.title': 'Выбор коллекций',
   'picker.searchPlaceholder': 'Поиск по названию, описанию, сложности (1–3) или тегам…',
   'picker.loading': 'Загрузка...',
@@ -477,7 +478,7 @@ const ru: Dict = {
   'picker.cancel': 'Отмена',
   'picker.confirm': 'Подтвердить',
 
-  // ── Friends Screen ──
+  // друзья
   'friends.back': '← Назад',
   'friends.title': 'Друзья',
   'friends.loading': 'Загрузка…',
@@ -500,7 +501,7 @@ const ru: Dict = {
   'friends.serverError': 'Не удалось связаться с сервером.',
   'friends.requestSent': 'Запрос дружбы отправлен {name}.',
 
-  // ── Profile Screen ──
+  // профиль
   'profile.back': '← Назад',
   'profile.title': 'Профиль',
   'profile.currentUsername': 'Текущее имя:',
@@ -545,7 +546,7 @@ const ru: Dict = {
   'profile.updatePassword': 'Обновить пароль',
   'profile.serverError': 'Не удалось связаться с сервером.',
 
-  // ── Stats Modal ──
+  // статистика
   'stats.title': 'Статистика — {name}',
   'stats.closeAria': 'Закрыть',
   'stats.loading': 'Загрузка…',
@@ -556,13 +557,13 @@ const ru: Dict = {
   'stats.wins': 'Победы',
   'stats.losses': 'Поражения',
 
-  // ── Footer ──
+  // футер
   'footer.logo': 'Alias',
   'footer.howToPlay': 'Как играть',
   'footer.terms': 'Условия использования',
   'footer.copyright': 'Валентина Владимирова · 2026',
 
-  // ── App (status messages) ──
+  // приложение (статусы)
   'app.enterName': 'Пожалуйста, введите ваше имя.',
   'app.enterRoomCode': 'Пожалуйста, введите код комнаты.',
   'app.reconnecting': 'Переподключение к комнате...',
@@ -593,7 +594,7 @@ const ru: Dict = {
   'app.resetFailed': 'Не удалось сбросить пароль.',
   'app.serverError': 'Не удалось связаться с сервером.',
 
-  // ── How To Play ──
+  // как играть
   'howToPlay.back': '← Назад',
   'howToPlay.title': 'Как играть',
   'howToPlay.whatIsTitle': 'Что такое Alias?',
@@ -617,7 +618,7 @@ const ru: Dict = {
   'howToPlay.tip3': 'Будьте креативны — яркие описания ваш лучший инструмент онлайн!',
   'howToPlay.tip4': 'Не тратьте слишком много времени на сложное слово — пропустите и двигайтесь дальше.',
 
-  // ── Terms of Service ──
+  // условия использования
   'terms.back': '← Назад',
   'terms.title': 'Условия использования',
   'terms.lastUpdated': 'Дата обновления: 13 апреля 2026 г.',
@@ -653,7 +654,7 @@ const ru: Dict = {
   'terms.s10title': '10. Контакты',
   'terms.s10text': 'По вопросам об этих Условиях обращайтесь через каналы поддержки игры.',
 
-  // ── Language Switcher ──
+  // язык
   'lang.switch': 'EN',
 }
 
@@ -666,11 +667,13 @@ export function t(key: TranslationKey): string | readonly string[] {
   return dict[key] ?? en[key] ?? key
 }
 
+// получить перевод как строку
 export function ts(key: TranslationKey): string {
   const val = t(key)
   return typeof val === 'string' ? val : val.join(', ')
 }
 
+// получить перевод как массив строк
 export function ta(key: TranslationKey): string[] {
   const val = t(key)
   return typeof val === 'string' ? [val] : [...val]

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ts } from '../i18n'
 import './AuthModal.css'
 
+// тип вкладки в модалке
 type AuthTab = 'login' | 'register'
 
+// пропсы модалки авторизации
 interface AuthModalProps {
   initialTab?: AuthTab
   serverError?: string
@@ -14,6 +16,7 @@ interface AuthModalProps {
   onForgotPassword: (email: string) => Promise<boolean>
 }
 
+// компонент модалки авторизации (логин/регистрация/восстановление пароля)
 export function AuthModal({
   initialTab = 'login',
   serverError,
@@ -23,6 +26,7 @@ export function AuthModal({
   onRegister,
   onForgotPassword,
 }: AuthModalProps) {
+  // стейты для вкладок и формы
   const [tab, setTab] = useState<AuthTab>(initialTab)
   const [forgotMode, setForgotMode] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
@@ -36,8 +40,7 @@ export function AuthModal({
   const [clientError, setClientError] = useState('')
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const dialogRef = useRef<HTMLDialogElement>(null)
-  // Track where mousedown started so we only close on backdrop click,
-  // not when the user drags from inside → outside and releases.
+  // трекаем где начался mousedown чтоб закрывать только по клику на фон
   const mousedownOnBackdrop = useRef(false)
 
   const markTouched = (field: string) => setTouched((prev) => ({ ...prev, [field]: true }))
@@ -59,18 +62,20 @@ export function AuthModal({
     setForgotError('')
   }, [tab])
 
+  // регулярки для валидации
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const USERNAME_RE = /^[a-zA-Z0-9._/]+$/
 
-  // Per-field validation helpers used for live highlighting
+  // валидация полей для подсветки ошибок в реальном времени
   const emailInvalid  = touched.email  && (email.trim() === '' || !EMAIL_RE.test(email.trim()))
   const passInvalid   = touched.password && (password.trim() === '' || password.trim().length < 6)
   const confirmInvalid = touched.confirmPassword && confirmPassword.trim() !== password.trim()
 
+  // обработка отправки формы логина/регистрации
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     setClientError('')
-    // Mark all relevant fields as touched so empty ones highlight
+    // помечаем все поля как тронутые чтоб пустые подсветились
     const fields: Record<string, boolean> = { username: true, password: true }
     if (tab === 'register') { fields.email = true; fields.confirmPassword = true }
     setTouched(fields)
@@ -111,6 +116,7 @@ export function AuthModal({
 
   const displayError = clientError || serverError || ''
 
+  // обработка клика по фону модалки для закрытия
   const handleDialogMouseDown = (e: React.MouseEvent<HTMLDialogElement>) => {
     mousedownOnBackdrop.current = e.target === dialogRef.current
   }
@@ -120,6 +126,7 @@ export function AuthModal({
     mousedownOnBackdrop.current = false
   }
 
+  // отправка запроса на восстановление пароля
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmedEmail = forgotEmail.trim()

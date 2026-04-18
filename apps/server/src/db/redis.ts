@@ -2,10 +2,13 @@ import { createClient } from "redis";
 
 type RedisClient = ReturnType<typeof createClient>;
 
+// синглтон-клиент redis
 let client: RedisClient | null = null;
 
+// геттер для redis клиента
 export const getRedisClient = (): RedisClient | null => client;
 
+// подключение к redis, если указан url
 export const initRedis = async (): Promise<void> => {
   const url = process.env.REDIS_URL;
   if (!url) {

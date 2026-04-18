@@ -14,6 +14,7 @@ import {
   UserStats,
 } from "./domain";
 
+// константы валидации полей
 const USERNAME_MIN_LENGTH = 3;
 const USERNAME_MAX_LENGTH = 32;
 const PASSWORD_MIN_LENGTH = 8;
@@ -29,42 +30,48 @@ const MAX_DIFFICULTY = 10;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SAFE_TEXT_RE = /^[\p{L}\p{N} _.,!?@#:/+\-()'\"]+$/u;
-
-export interface UserPublicDto {
+// dto пользователя (publiчные данные)
+export interface UserPublicDto{
   id: number;
   username: string;
   createdAt: string;
   email: string;
 }
 
+// dto создания пользователя
 export interface CreateUserDto {
   username: string;
   password: string;
   email: string;
 }
 
+// dto обновления пользователя
 export interface UpdateUserDto {
   username?: string;
   password?: string;
   email?: string;
 }
 
+// dto для аватарки
 export interface UpsertUserPictureDto {
   userId: number;
   picturePath: string;
   format: string;
 }
 
+// dto дружбы
 export interface CreateUserFriendDto {
   userId: number;
   friendId: number;
 }
 
+// dto заявки в друзья
 export interface CreateUserFriendRequestDto {
   userIdFrom: number;
   userIdTo: number;
 }
 
+// dto статистики
 export interface UpsertUserStatsDto {
   userId: number;
   guessed: number;
@@ -73,6 +80,7 @@ export interface UpsertUserStatsDto {
   losses: number;
 }
 
+// dto стандартной коллекции
 export interface CreateDefaultCollectionDto {
   name: string;
   description: string;
@@ -80,15 +88,18 @@ export interface CreateDefaultCollectionDto {
   difficulty: number;
 }
 
+// dto тега
 export interface CreateTagDto {
   name: string;
 }
 
+// dto привязки тега к коллекции
 export interface AttachCollectionTagDto {
   collectionId: number;
   tagId: number;
 }
 
+// dto пользовательской коллекции
 export interface CreateUserCollectionDto {
   name: string;
   description: string;
@@ -97,22 +108,26 @@ export interface CreateUserCollectionDto {
   creatorId: number;
 }
 
+// dto карточки пользователя
 export interface CreateUserCardDto {
   word: string;
   difficulty: number;
   userCollectionId: number;
 }
 
+// dto карточки
 export interface CreateCardDto {
   word: string;
   difficulty: number;
 }
 
+// dto привязки карточки к коллекции
 export interface AttachCardCollectionDto {
   collectionId: number;
   cardId: number;
 }
 
+// dto создания игры
 export interface CreateGameDto {
   startedDt: string;
   endedDt?: string | null;
@@ -122,6 +137,7 @@ export interface CreateGameDto {
   winnerId?: number | null;
 }
 
+// вспомогательные функции валидации полей
 const ensureRecord = (value: unknown, label: string): Record<string, unknown> => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} must be an object`);
@@ -243,6 +259,7 @@ const optionalIsoDateOrNull = (source: Record<string, unknown>, field: string): 
   return value;
 };
 
+// парсеры входящих данных
 export const parseCreateUserDto = (payload: unknown): CreateUserDto => {
   const source = ensureRecord(payload, "createUser");
   const email = requireString(source, "email", 5, EMAIL_MAX_LENGTH, false).toLowerCase();
@@ -403,6 +420,7 @@ export const parseCreateGameDto = (payload: unknown): CreateGameDto => {
   };
 };
 
+// конвертеры dto → модель и обратно
 export const toUserPublicDto = (user: User): UserPublicDto => ({
   id: user.id,
   username: user.username,

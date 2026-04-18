@@ -4,6 +4,7 @@ import type { AuthUser } from '../types/auth'
 import { ts } from '../i18n'
 import './StatsModal.css'
 
+// интерфейс статистики юзера
 interface UserStats {
   guessed: number
   skipped: number
@@ -11,15 +12,18 @@ interface UserStats {
   losses: number
 }
 
+// пропсы модалки статистики
 interface StatsModalProps {
   user: AuthUser
   onClose: () => void
 }
 
+// модалка со статистикой юзера
 export function StatsModal({ user, onClose }: StatsModalProps) {
   const [stats, setStats] = useState<UserStats | null>(null)
   const [error, setError] = useState('')
 
+  // загружаем статистику при монтировании
   useEffect(() => {
     const load = async () => {
       try {

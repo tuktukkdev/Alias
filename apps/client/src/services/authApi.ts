@@ -1,5 +1,6 @@
 import { API_BASE } from '../config/client'
 
+// интерфейс ответа при авторизации
 export interface AuthResponse {
   id: number
   username: string
@@ -8,10 +9,12 @@ export interface AuthResponse {
   emailVerified?: boolean
 }
 
+// интерфейс ошибки авторизации
 export interface AuthErrorResponse {
   error: string
 }
 
+// запрос на логин
 export async function loginRequest(username: string, password: string): Promise<Response> {
   return fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
@@ -20,6 +23,7 @@ export async function loginRequest(username: string, password: string): Promise<
   })
 }
 
+// запрос на регистрацию
 export async function registerRequest(
   username: string,
   email: string,
@@ -32,15 +36,18 @@ export async function registerRequest(
   })
 }
 
+// парсим ответ авторизации
 export async function parseAuthResponse(response: Response): Promise<AuthResponse> {
   return response.json() as Promise<AuthResponse>
 }
 
+// парсим ошибку авторизации
 export async function parseAuthErrorResponse(response: Response): Promise<string> {
   const data = (await response.json()) as AuthErrorResponse
   return data.error ?? 'Unknown error'
 }
 
+// запрос на верификацию email по токену
 export async function verifyEmailRequest(token: string): Promise<Response> {
   return fetch(`${API_BASE}/auth/verify-email`, {
     method: 'POST',
@@ -49,6 +56,7 @@ export async function verifyEmailRequest(token: string): Promise<Response> {
   })
 }
 
+// запрос на сброс пароля
 export async function requestPasswordResetRequest(email: string): Promise<Response> {
   return fetch(`${API_BASE}/auth/request-password-reset`, {
     method: 'POST',
@@ -57,6 +65,7 @@ export async function requestPasswordResetRequest(email: string): Promise<Respon
   })
 }
 
+// запрос на установку нового пароля по токену
 export async function resetPasswordRequest(token: string, newPassword: string): Promise<Response> {
   return fetch(`${API_BASE}/auth/reset-password`, {
     method: 'POST',
@@ -65,6 +74,7 @@ export async function resetPasswordRequest(token: string, newPassword: string): 
   })
 }
 
+// повторная отправка письма верификации
 export async function resendVerificationRequest(userId: string): Promise<Response> {
   return fetch(`${API_BASE}/auth/resend-verification`, {
     method: 'POST',
@@ -73,6 +83,7 @@ export async function resendVerificationRequest(userId: string): Promise<Respons
   })
 }
 
+// проверяем верифицирован ли email у юзера
 export async function fetchEmailVerifiedRequest(userId: string): Promise<boolean> {
   const res = await fetch(`${API_BASE}/auth/profile/${encodeURIComponent(userId)}`)
   if (!res.ok) return false

@@ -4,6 +4,7 @@ exports.closePlayerSockets = exports.broadcastActiveWord = exports.broadcastRoom
 const ws_1 = require("ws");
 const serverState_1 = require("../state/serverState");
 const roomService_1 = require("../services/roomService");
+// добавить сокет в комнату
 const addSocketToRoom = (roomId, socket) => {
     const sockets = serverState_1.roomSockets.get(roomId);
     if (sockets) {
@@ -13,6 +14,7 @@ const addSocketToRoom = (roomId, socket) => {
     serverState_1.roomSockets.set(roomId, new Set([socket]));
 };
 exports.addSocketToRoom = addSocketToRoom;
+// удалить сокет из комнаты при отключении
 const removeSocketFromRoom = (socket) => {
     const roomId = serverState_1.socketRooms.get(socket);
     if (!roomId) {
@@ -28,6 +30,7 @@ const removeSocketFromRoom = (socket) => {
     }
 };
 exports.removeSocketFromRoom = removeSocketFromRoom;
+// отправка события всем сокетам комнаты
 const broadcastToRoom = (roomId, event) => {
     const sockets = serverState_1.roomSockets.get(roomId);
     if (!sockets) {
@@ -41,6 +44,7 @@ const broadcastToRoom = (roomId, event) => {
     }
 };
 exports.broadcastToRoom = broadcastToRoom;
+// разослать актуальное состояние комнаты
 const broadcastRoomState = (roomId, record) => {
     (0, exports.broadcastToRoom)(roomId, {
         type: "room_state",
@@ -48,6 +52,7 @@ const broadcastRoomState = (roomId, record) => {
     });
 };
 exports.broadcastRoomState = broadcastRoomState;
+// отправка текущего слова (только объясняющему игроку)
 const broadcastActiveWord = (roomId, record) => {
     const sockets = serverState_1.roomSockets.get(roomId);
     if (!sockets) {
@@ -67,6 +72,7 @@ const broadcastActiveWord = (roomId, record) => {
     }
 };
 exports.broadcastActiveWord = broadcastActiveWord;
+// закрыть все сокеты игрока (при кике или выходе)
 const closePlayerSockets = (roomId, playerId) => {
     const sockets = serverState_1.roomSockets.get(roomId);
     if (!sockets) {

@@ -1,15 +1,9 @@
+// сервис для работы со словами — загрузка пула и выбор слов
 import { prisma } from "../db/prisma";
 import { getDefaultCollectionWordsCached, getGeneralWordsCached } from "./cacheService";
 import type { RoomRecord, SelectedCollection } from "../types/game";
 
-/**
- * Build the full word pool for a room at game-start time.
- * - Custom collection words are loaded directly from the DB.
- * - Default collection words are served from the Redis cache (DB fallback).
- * - If no collections are selected, the general cards pool is used instead.
- * The result is stored on the record so that all subsequent word picks
- * are pure in-memory operations with zero DB/Redis round-trips.
- */
+// загружаем пул слов для комнаты (кастомные из бд, дефолтные из кеша)
 export async function loadWordPool(record: RoomRecord): Promise<void> {
   const { selectedCollections, difficulty } = record.room.settings;
   const safeDifficulty = Math.max(1, Math.min(3, difficulty));
@@ -18,7 +12,7 @@ export async function loadWordPool(record: RoomRecord): Promise<void> {
   const customIds = selectedCollections.filter((c) => c.type === "custom").map((c) => c.id);
   const defaultIds = selectedCollections.filter((c) => c.type === "default").map((c) => c.id);
 
-  // Custom collections – always fresh from DB (user-owned data)
+  // кастомные коллекции — всегда из базы
   if (customIds.length > 0) {
     const rows = await prisma.userCard.findMany({
       where: { userCollectionId: { in: customIds } },
@@ -27,19 +21,19 @@ export async function loadWordPool(record: RoomRecord): Promise<void> {
     rows.forEach((r) => words.add(r.word));
   }
 
-  // Default collections – served from Redis cache
+  // дефолтные коллекции — из redis кеша
   for (const id of defaultIds) {
     const colWords = await getDefaultCollectionWordsCached(id);
     colWords.forEach((w) => words.add(w));
   }
 
-  // Fallback: no collections chosen – use general cards by difficulty
+  // фолбэк: ничего не выбрано — берём общие карточки по сложности
   if (words.size === 0) {
     const byDiff = await getGeneralWordsCached(safeDifficulty);
     byDiff.forEach((w) => words.add(w));
   }
 
-  // Last resort: all cards
+  // последний вариант: вообще все карточки
   if (words.size === 0) {
     const all = await getGeneralWordsCached(null);
     all.forEach((w) => words.add(w));
@@ -48,11 +42,7 @@ export async function loadWordPool(record: RoomRecord): Promise<void> {
   record.wordPool = [...words];
 }
 
-/**
- * Pick a random word from the pre-loaded in-memory pool, excluding already
- * used words.  When the pool is exhausted the used-word set is reset so the
- * game can continue seamlessly.
- */
+// выбираем случайное слово из пула (неиспользованное)
 export function pickWordFromPool(record: RoomRecord): string {
   const pool = record.wordPool;
   if (pool && pool.length > 0) {
@@ -60,16 +50,14 @@ export function pickWordFromPool(record: RoomRecord): string {
     if (available.length > 0) {
       return available[Math.floor(Math.random() * available.length)];
     }
-    // All words exhausted – recycle the pool
+    // слова кончились — сбрасываем и идём по новой
     record.usedWords.clear();
     return pool[Math.floor(Math.random() * pool.length)];
   }
   return "слово";
 }
 
-/**
- * Count total words available across selected collections.
- */
+// считаем общее кол-во слов в выбранных коллекциях
 export async function countCollectionWords(
   collections: SelectedCollection[],
 ): Promise<number> {

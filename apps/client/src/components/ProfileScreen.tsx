@@ -5,6 +5,7 @@ import type { AuthUser } from '../types/auth'
 import { ts } from '../i18n'
 import './ProfileScreen.css'
 
+// пропсы для экрана профиля
 interface ProfileScreenProps {
   user: AuthUser
   onBack: () => void
@@ -13,12 +14,15 @@ interface ProfileScreenProps {
   onEmailVerified: () => void
 }
 
+// главный компонент экрана профиля юзера
 export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged, onEmailVerified }: ProfileScreenProps) {
+  // стейты для смены юзернейма
   const [newUsername, setNewUsername] = useState('')
   const [usernameError, setUsernameError] = useState('')
   const [usernameSuccess, setUsernameSuccess] = useState('')
   const [usernameLoading, setUsernameLoading] = useState(false)
 
+  // стейты для смены пароля
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -26,6 +30,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
   const [passwordSuccess, setPasswordSuccess] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
 
+  // стейты для аватарки
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarError, setAvatarError] = useState('')
@@ -34,11 +39,13 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
   const [deleteAvatarLoading, setDeleteAvatarLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // стейты для верификации почты
   const [emailVerified, setEmailVerified] = useState(user.emailVerified ?? false)
   const [resendLoading, setResendLoading] = useState(false)
   const [resendMessage, setResendMessage] = useState('')
   const [resendError, setResendError] = useState('')
 
+  // при маунте проверяем подтверждена ли почта
   useEffect(() => {
     fetchEmailVerifiedRequest(user.id).then((verified) => {
       setEmailVerified(verified)
@@ -46,6 +53,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     }).catch(() => {})
   }, [])
 
+  // хэндлер отправки нового юзернейма
   const handleUsernameSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = newUsername.trim()
@@ -81,6 +89,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     }
   }
 
+  // хэндлер выбора файла аватарки
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -100,6 +109,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     reader.readAsDataURL(file)
   }
 
+  // хэндлер загрузки аватарки на сервер
   const handleAvatarUpload = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!avatarPreview || !avatarFile) {
@@ -132,6 +142,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     }
   }
 
+  // хэндлер удаления аватарки
   const handleDeleteAvatar = async () => {
     if (!window.confirm(ts('profile.confirmDeletePicture'))) return
     setDeleteAvatarLoading(true)
@@ -157,6 +168,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     }
   }
 
+  // хэндлер смены пароля
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentPassword) {
@@ -192,6 +204,7 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
     }
   }
 
+  // хэндлер повторной отправки письма для верификации
   const handleResendVerification = async () => {
     setResendLoading(true)
     setResendMessage('')
@@ -231,7 +244,6 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
           {ts('profile.currentUsername')} <strong>{user.name}</strong>
         </p>
 
-        {/* ── Email verification status ── */}
         {user.email && (
           <>
             <div className="emailVerificationRow">
@@ -262,7 +274,6 @@ export function ProfileScreen({ user, onBack, onUsernameChanged, onAvatarChanged
           </>
         )}
 
-        {/* ── Profile picture ── */}
         <form className="profileForm" onSubmit={(e) => void handleAvatarUpload(e)}>
           <h2 className="sectionTitle">{ts('profile.profilePicture')}</h2>
           <div className="avatarPreviewWrap">

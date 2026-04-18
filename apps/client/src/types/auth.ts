@@ -1,3 +1,4 @@
+// интерфейс авторизованного юзера
 export interface AuthUser {
   id: string
   name: string

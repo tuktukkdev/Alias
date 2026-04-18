@@ -1,4 +1,4 @@
-/* ── Game Screen ─────────────────────────────────────────── */
+/* экран игры */
 
 .gamePanel {
   width: min(1100px, 100%);
@@ -96,7 +96,7 @@
   color: var(--color-text);
 }
 
-/* ── Scoreboard ──────────────────────────────────────────── */
+/* таблица очков */
 
 .scoreboardTable {
   width: 100%;
@@ -165,7 +165,7 @@
   background: rgba(196, 64, 64, 0.08);
 }
 
-/* ── Chat ───────────────────────────────────────────test─────── */
+/* чат */
 
 .chatSection {
   display: grid;
@@ -232,7 +232,7 @@
   gap: 0.6rem;
 }
 
-/* ── Winner Overlay ──────────────────────────────────────── */
+/* оверлей победителя */
 
 .winnerOverlay {
   position: fixed;
@@ -284,7 +284,7 @@
   background: var(--color-accent-hover);
 }
 
-/* ── Volume Menu ─────────────────────────────────────────── */
+/* меню громкости */
 
 .volumeContextMenu {
   position: fixed;

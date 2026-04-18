@@ -1,12 +1,15 @@
+// генератор prisma клиента
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
+// подключение к postgresql
 datasource db {
   provider = "postgresql"
 }
 
+// модель юзера
 model User {
   id                     Int                 @id @default(autoincrement())
   username               String              @unique @db.VarChar(64)
@@ -28,6 +31,7 @@ model User {
   @@map("users")
 }
 
+// аватарка юзера
 model UserPicture {
   userId      Int    @id @map("user_id")
   picturePath String @map("picture_path") @db.VarChar(512)
@@ -37,6 +41,7 @@ model UserPicture {
   @@map("user_picture")
 }
 
+// связь дружбы
 model UserFriend {
   userId   Int  @map("user_id")
   friendId Int  @map("friend_id")
@@ -47,6 +52,7 @@ model UserFriend {
   @@map("user_friends")
 }
 
+// запрос на дружбу
 model UserFriendRequest {
   userIdFrom Int  @map("user_id_from")
   userIdTo   Int  @map("user_id_to")
@@ -57,6 +63,7 @@ model UserFriendRequest {
   @@map("user_friend_request")
 }
 
+// статистика юзера
 model UserStats {
   userId  Int  @id @map("user_id")
   guessed Int  @default(0)
@@ -68,6 +75,7 @@ model UserStats {
   @@map("user_stats")
 }
 
+// дефолтная коллекция слов
 model DefaultCollection {
   id            Int               @id @default(autoincrement())
   name          String            @db.VarChar(128)
@@ -80,6 +88,7 @@ model DefaultCollection {
   @@map("default_collections")
 }
 
+// тег для коллекций
 model Tag {
   id    Int             @id @default(autoincrement())
   name  String          @unique @db.VarChar(64)
@@ -88,6 +97,7 @@ model Tag {
   @@map("tags")
 }
 
+// связь коллекции и тега
 model CollectionTag {
   collectionId Int               @map("collection_id")
   tagId        Int               @map("tag_id")
@@ -98,6 +108,7 @@ model CollectionTag {
   @@map("collection_tags")
 }
 
+// пользовательская коллекция
 model UserCollection {
   id            Int             @id @default(autoincrement())
   name          String          @db.VarChar(128)
@@ -111,6 +122,7 @@ model UserCollection {
   @@map("user_collections")
 }
 
+// карточка из пользовательской коллекции
 model UserCard {
   id               Int            @id @default(autoincrement())
   word             String         @db.VarChar(128)
@@ -121,6 +133,7 @@ model UserCard {
   @@map("user_cards")
 }
 
+// карточка из дефолтной коллекции
 model Card {
   id         Int               @id @default(autoincrement())
   word       String            @db.VarChar(128)
@@ -130,6 +143,7 @@ model Card {
   @@map("cards")
 }
 
+// связь карточки и коллекции
 model CardsCollection {
   collectionId Int               @map("collection_id")
   cardId       Int               @map("card_id")
@@ -140,6 +154,7 @@ model CardsCollection {
   @@map("cards_collections")
 }
 
+// запись об игре
 model Game {
   gameId      Int       @id @default(autoincrement()) @map("game_id")
   startedDt   DateTime  @default(now()) @map("started_dt")
@@ -154,6 +169,7 @@ model Game {
   @@map("games")
 }
 
+// токен для верификации email и сброса пароля
 model EmailToken {
   id        Int      @id @default(autoincrement())
   userId    Int      @map("user_id")

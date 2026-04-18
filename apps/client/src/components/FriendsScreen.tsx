@@ -4,24 +4,29 @@ import type { AuthUser } from '../types/auth'
 import { ts } from '../i18n'
 import './FriendsScreen.css'
 
+// запись о друге — id и имя
 interface FriendEntry {
   id: number
   username: string
 }
 
+// все данные по друзьям: список, входящие и исходящие запросы
 interface FriendsData {
   friends: FriendEntry[]
   pending: FriendEntry[]
   sent: FriendEntry[]
 }
 
+// пропсы экрана друзей — юзер, назад и колбэк на кол-во входящих
 interface FriendsScreenProps {
   user: AuthUser
   onBack: () => void
   onPendingCountChange: (count: number) => void
 }
 
+// основной экран друзей — поиск, запросы, список
 export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScreenProps) {
+  // стейты — данные друзей, загрузка, ввод, статусы отправки и джойна
   const [data, setData] = useState<FriendsData>({ friends: [], pending: [], sent: [] })
   const [loading, setLoading] = useState(true)
   const [sendInput, setSendInput] = useState('')
@@ -29,6 +34,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
   const [sending, setSending] = useState(false)
   const [joinStatus, setJoinStatus] = useState<Record<number, 'loading' | 'not_in_lobby'>>({})
 
+  // загрузка списка друзей и запросов с сервера
   const loadData = async () => {
     try {
       const res = await fetch(`${API_BASE}/friends/${user.id}`)
@@ -37,16 +43,18 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
       setData(json)
       onPendingCountChange(json.pending.length)
     } catch {
-      // ignore
+      //
     } finally {
       setLoading(false)
     }
   }
 
+  // при монтировании грузим данные
   useEffect(() => {
     void loadData()
   }, [user.id])
 
+  // отправка запроса в друзья по юзернейму
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
     const username = sendInput.trim()
@@ -83,6 +91,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
     }
   }
 
+  // принять входящий запрос
   const handleAccept = async (fromId: number) => {
     await fetch(`${API_BASE}/friends/accept`, {
       method: 'POST',
@@ -92,6 +101,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
     void loadData()
   }
 
+  // отклонить входящий запрос
   const handleDecline = async (fromId: number) => {
     await fetch(`${API_BASE}/friends/decline`, {
       method: 'POST',
@@ -101,6 +111,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
     void loadData()
   }
 
+  // отменить свой исходящий запрос
   const handleCancel = async (toId: number) => {
     await fetch(`${API_BASE}/friends/cancel`, {
       method: 'POST',
@@ -110,6 +121,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
     void loadData()
   }
 
+  // удалить друга из списка
   const handleRemove = async (friendId: number) => {
     await fetch(`${API_BASE}/friends/remove`, {
       method: 'DELETE',
@@ -119,6 +131,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
     void loadData()
   }
 
+  // зайти в комнату к другу если он в лобби
   const handleJoin = async (friendId: number) => {
     setJoinStatus((prev) => ({ ...prev, [friendId]: 'loading' }))
     try {
@@ -150,7 +163,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
           <p className="hintText">{ts('friends.loading')}</p>
         ) : (
           <>
-            {/* Pending section */}
+            {/* входящие запросы */}
             <div className="friendsSection">
               <h2 className="sectionTitle">
                 {ts('friends.pending')}
@@ -187,7 +200,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
               )}
             </div>
 
-            {/* Friends section */}
+            {/* список друзей */}
             <div className="friendsSection">
               <h2 className="sectionTitle">{ts('friends.friendsCount').replace('{count}', String(data.friends.length))}</h2>
               {data.friends.length === 0 ? (
@@ -223,7 +236,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
               )}
             </div>
 
-            {/* Sent section */}
+            {/* исходящие запросы */}
             <div className="friendsSection">
               <h2 className="sectionTitle">{ts('friends.sent')}</h2>
               {data.sent.length === 0 ? (
@@ -248,7 +261,7 @@ export function FriendsScreen({ user, onBack, onPendingCountChange }: FriendsScr
           </>
         )}
 
-        {/* Send request */}
+        {/* форма отправки запроса */}
         <form className="friendsSendForm" onSubmit={(e) => void handleSend(e)}>
           <input
             className="input"

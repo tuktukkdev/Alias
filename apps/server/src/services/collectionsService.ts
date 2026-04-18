@@ -1,3 +1,4 @@
+// сервис для работы с пользовательскими коллекциями слов
 import { prisma } from "../db/prisma";
 
 export interface CollectionEntry {
@@ -13,6 +14,7 @@ export interface WordEntry {
   word: string;
 }
 
+// получаем все коллекции пользователя
 export async function getCollections(userId: number): Promise<CollectionEntry[]> {
   return prisma.userCollection.findMany({
     where: { creatorId: userId },
@@ -21,6 +23,7 @@ export async function getCollections(userId: number): Promise<CollectionEntry[]>
   });
 }
 
+// создаём новую коллекцию
 export async function createCollection(
   userId: number,
   name: string,
@@ -33,6 +36,7 @@ export async function createCollection(
   });
 }
 
+// удаляем коллекцию (только свою)
 export async function deleteCollection(
   userId: number,
   collectionId: number
@@ -47,6 +51,7 @@ export async function deleteCollection(
   return { ok: true };
 }
 
+// получаем слова из коллекции
 export async function getCollectionWords(
   collectionId: number,
   userId: number
@@ -63,6 +68,7 @@ export async function getCollectionWords(
   });
 }
 
+// сохраняем слова в коллекцию (транзакция: удаляем старые, добавляем новые)
 export async function saveCollectionWords(
   collectionId: number,
   userId: number,

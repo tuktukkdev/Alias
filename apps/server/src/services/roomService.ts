@@ -1,8 +1,10 @@
+// сервис игровой комнаты — основная логика игры
 import { prisma } from "../db/prisma";
 import { GAME_START_DELAY_MS, roomSockets, roomTickIntervals, rooms } from "../state/serverState";
 import { Player, PlayerGameStats, RoomBroadcasters, RoomRecord, RoomStateBroadcastEvent, WinnerInfo } from "../types/game";
 import { loadWordPool, pickWordFromPool } from "./wordService";
 
+// собираем объект состояния комнаты для отправки клиентам
 export const buildRoomStatePayload = (
   roomId: string,
   record: RoomRecord,
@@ -19,6 +21,7 @@ export const buildRoomStatePayload = (
   winner: record.winner,
 });
 
+// останавливаем таймер комнаты
 export const clearRoomTickInterval = (roomId: string): void => {
   const interval = roomTickIntervals.get(roomId);
   if (!interval) {
@@ -29,12 +32,14 @@ export const clearRoomTickInterval = (roomId: string): void => {
   roomTickIntervals.delete(roomId);
 };
 
+// получаем следующее слово из пула
 export const getNextWord = async (record: RoomRecord): Promise<string> => {
   const word = pickWordFromPool(record);
   record.usedWords.add(word);
   return word;
 };
 
+// определяем кто ходит следующим (по кругу)
 export const getNextTurnPlayerId = (record: RoomRecord): string | null => {
   const { players } = record.room;
   if (players.length === 0) {
@@ -54,10 +59,12 @@ export const getNextTurnPlayerId = (record: RoomRecord): string | null => {
   return players[nextIndex].id;
 };
 
+// все ли игроки подключены
 export const allPlayersConnected = (record: RoomRecord): boolean => {
   return record.room.players.every((player) => record.connectedPlayerIds.has(player.id));
 };
 
+// запускаем тик каждую секунду — основной игровой цикл
 export const startRoomTickLoop = (roomId: string, broadcasters: RoomBroadcasters): void => {
   if (roomTickIntervals.has(roomId)) {
     return;
@@ -115,6 +122,7 @@ export const startRoomTickLoop = (roomId: string, broadcasters: RoomBroadcasters
   roomTickIntervals.set(roomId, interval);
 };
 
+// обработка текущего слова (угадано/пропущено/время вышло)
 export const resolveCurrentWord = (
   roomId: string,
   record: RoomRecord,
@@ -123,7 +131,7 @@ export const resolveCurrentWord = (
   const timedOut = record.turnSecondsRemaining === 0 || record.waitingForWordResolutionAtZero;
 
   if (timedOut) {
-    // Check for winner before advancing the turn
+    // проверяем нет ли победителя перед сменой хода
     const winScore = record.room.settings.winScore;
     const topPlayer = record.room.players.reduce<Player | null>(
       (best, p) => (!best || p.score > best.score ? p : best),
@@ -154,6 +162,7 @@ export const resolveCurrentWord = (
   broadcasters.broadcastRoomState(roomId, record);
 };
 
+// удаляем игрока из комнаты насовсем
 export const removePlayerPermanently = (
   roomId: string,
   playerId: string,
@@ -168,7 +177,7 @@ export const removePlayerPermanently = (
   record.connectedPlayerIds.delete(playerId);
 
   if (record.started && record.currentTurnPlayerId === playerId && record.room.players.length > 0) {
-    // Check winner before giving next player a turn
+    // проверяем победителя перед передачей хода
     const winScore = record.room.settings.winScore;
     const topPlayer = record.room.players.reduce<Player | null>(
       (best, p) => (!best || p.score > best.score ? p : best),
@@ -203,6 +212,7 @@ export const removePlayerPermanently = (
   broadcasters.broadcastRoomState(roomId, record);
 };
 
+// запуск новой игры в комнате
 export const startRoomGame = async (
   roomId: string,
   record: RoomRecord,
@@ -212,7 +222,7 @@ export const startRoomGame = async (
     return;
   }
 
-  // Mark as started synchronously so route responses reflect correct state immediately.
+  // отмечаем старт синхронно чтобы роуты сразу видели новое состояние
   record.started = true;
   record.startRequested = false;
   record.startedAt = new Date(Date.now() + GAME_START_DELAY_MS).toISOString();
@@ -228,8 +238,7 @@ export const startRoomGame = async (
 
   broadcasters.broadcastRoomState(roomId, record);
 
-  // Load word pool into memory (uses Redis for default collections, DB for custom).
-  // This completes well within the GAME_START_DELAY_MS countdown window.
+  // загружаем пул слов в память
   await loadWordPool(record);
 
   const word = await getNextWord(record);
@@ -239,6 +248,7 @@ export const startRoomGame = async (
   startRoomTickLoop(roomId, broadcasters);
 };
 
+// завершаем игру и сохраняем результаты
 export const endGame = async (
   roomId: string,
   record: RoomRecord,
@@ -254,6 +264,7 @@ export const endGame = async (
   await saveGameStats(record, record.winner);
 };
 
+// сохраняем статистику игры в базу
 async function saveGameStats(record: RoomRecord, winner: WinnerInfo): Promise<void> {
   const hostPlayer = record.room.players.find((p) => p.id === record.room.hostId);
   const hostUserId = hostPlayer?.userId;
@@ -275,10 +286,10 @@ async function saveGameStats(record: RoomRecord, winner: WinnerInfo): Promise<vo
         },
       });
     } catch {
-      // non-critical
     }
   }
 
+  // обновляем статы каждому игроку
   for (const player of record.room.players) {
     if (!player.userId) continue;
     const stats: PlayerGameStats = record.playerStats.get(player.id) ?? { guessed: 0, skipped: 0 };
@@ -301,7 +312,6 @@ async function saveGameStats(record: RoomRecord, winner: WinnerInfo): Promise<vo
         },
       });
     } catch {
-      // non-critical
     }
   }
 }

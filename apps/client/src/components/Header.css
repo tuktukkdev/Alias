@@ -1,4 +1,4 @@
-/* ── Site Header ─────────────────────────────────────────── */
+/* шапка сайта */
 
 .siteHeader {
   position: sticky;
@@ -76,7 +76,7 @@
   gap: 0.5rem;
 }
 
-/* Auth buttons (logged-out state) */
+/* кнопки авторизации */
 
 .authButtons {
   display: flex;
@@ -135,7 +135,7 @@
   background: var(--color-accent-hover);
 }
 
-/* ── User Menu ───────────────────────────────────────────── */
+/* меню юзера */
 
 .userMenu {
   position: relative;
@@ -201,7 +201,7 @@
   flex-shrink: 0;
 }
 
-/* ── Dropdown ────────────────────────────────────────────── */
+/* дропдаун */
 
 .dropdown {
   position: absolute;

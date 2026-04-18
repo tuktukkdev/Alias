@@ -14,6 +14,7 @@ import type {
   UserStats,
 } from "./domain";
 
+// константы для валидации полей
 const USERNAME_MIN_LENGTH = 3;
 const USERNAME_MAX_LENGTH = 32;
 const PASSWORD_MIN_LENGTH = 8;
@@ -27,17 +28,20 @@ const FORMAT_MAX_LENGTH = 24;
 const GAME_TEXT_MAX_LENGTH = 4000;
 const MAX_DIFFICULTY = 10;
 
+// регулярки для проверки email и безопасного текста
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SAFE_TEXT_RE = /^[\p{L}\p{N} _.,!?@#:/+\-()'\"]+$/u;
+const SAFE_TEXT_RE = /^[\p{L}\p{N} _.,!?@#:/+\-()'\"]+ $/u;
 
 type UnknownRecord = Record<string, unknown>;
 
+// дто для регистрации
 export interface SignupRequestDto {
   username: string;
   email: string;
   password: string;
 }
 
+// проверяем что значение это объект
 const ensureRecord = (value: unknown, label: string): UnknownRecord => {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(`${label} must be an object`);
@@ -46,8 +50,10 @@ const ensureRecord = (value: unknown, label: string): UnknownRecord => {
   return value as UnknownRecord;
 };
 
+// убираем лишние пробелы из текста
 const sanitizeText = (value: string): string => value.trim().replace(/\s+/g, " ");
 
+// валидация строки с проверкой длины и безопасных символов
 const requireString = (
   source: UnknownRecord,
   field: string,
@@ -73,6 +79,7 @@ const requireString = (
   return value;
 };
 
+// проверка что число положительное целое
 const requirePositiveInt = (source: UnknownRecord, field: string): number => {
   const raw = source[field];
   if (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0) {
@@ -82,6 +89,7 @@ const requirePositiveInt = (source: UnknownRecord, field: string): number => {
   return raw;
 };
 
+// проверка что число неотрицательное целое
 const requireNonNegativeInt = (source: UnknownRecord, field: string): number => {
   const raw = source[field];
   if (typeof raw !== "number" || !Number.isInteger(raw) || raw < 0) {
@@ -91,6 +99,7 @@ const requireNonNegativeInt = (source: UnknownRecord, field: string): number => 
   return raw;
 };
 
+// проверка сложности (0-10)
 const requireDifficulty = (source: UnknownRecord, field: string): number => {
   const value = requireNonNegativeInt(source, field);
   if (value > MAX_DIFFICULTY) {
@@ -100,6 +109,7 @@ const requireDifficulty = (source: UnknownRecord, field: string): number => {
   return value;
 };
 
+// проверка iso даты
 const requireIsoDateString = (source: UnknownRecord, field: string): string => {
   const value = requireString(source, field, 1, 64, false);
   if (Number.isNaN(Date.parse(value))) {
@@ -109,6 +119,7 @@ const requireIsoDateString = (source: UnknownRecord, field: string): string => {
   return value;
 };
 
+// опциональная iso дата или null
 const optionalIsoDateOrNull = (source: UnknownRecord, field: string): string | null => {
   const raw = source[field];
   if (raw === null || raw === undefined) {
@@ -122,6 +133,7 @@ const optionalIsoDateOrNull = (source: UnknownRecord, field: string): string | n
   return raw;
 };
 
+// опциональное положительное число или null
 const optionalPositiveIntOrNull = (source: UnknownRecord, field: string): number | null => {
   const raw = source[field];
 
@@ -136,6 +148,7 @@ const optionalPositiveIntOrNull = (source: UnknownRecord, field: string): number
   return raw;
 };
 
+// парсинг данных регистрации
 export const parseSignupRequestDto = (payload: unknown): SignupRequestDto => {
   const source = ensureRecord(payload, "signupRequest");
   const email = requireString(source, "email", 5, EMAIL_MAX_LENGTH, false).toLowerCase();
@@ -151,6 +164,7 @@ export const parseSignupRequestDto = (payload: unknown): SignupRequestDto => {
   };
 };
 
+// парсинг публичных данных юзера
 export const parseUserPublic = (payload: unknown): UserPublic => {
   const source = ensureRecord(payload, "userPublic");
 
@@ -162,6 +176,7 @@ export const parseUserPublic = (payload: unknown): UserPublic => {
   };
 };
 
+// парсинг аватарки юзера
 export const parseUserPicture = (payload: unknown): UserPicture => {
   const source = ensureRecord(payload, "userPicture");
 
@@ -172,6 +187,7 @@ export const parseUserPicture = (payload: unknown): UserPicture => {
   };
 };
 
+// парсинг связи дружбы
 export const parseUserFriend = (payload: unknown): UserFriend => {
   const source = ensureRecord(payload, "userFriend");
   const userId = requirePositiveInt(source, "userId");
@@ -184,6 +200,7 @@ export const parseUserFriend = (payload: unknown): UserFriend => {
   return { userId, friendId };
 };
 
+// парсинг запроса на дружбу
 export const parseUserFriendRequest = (payload: unknown): UserFriendRequest => {
   const source = ensureRecord(payload, "userFriendRequest");
   const userIdFrom = requirePositiveInt(source, "userIdFrom");
@@ -196,6 +213,7 @@ export const parseUserFriendRequest = (payload: unknown): UserFriendRequest => {
   return { userIdFrom, userIdTo };
 };
 
+// парсинг статистики юзера
 export const parseUserStats = (payload: unknown): UserStats => {
   const source = ensureRecord(payload, "userStats");
 
@@ -208,6 +226,7 @@ export const parseUserStats = (payload: unknown): UserStats => {
   };
 };
 
+// парсинг дефолтной коллекции
 export const parseDefaultCollection = (payload: unknown): DefaultCollection => {
   const source = ensureRecord(payload, "defaultCollection");
 
@@ -220,6 +239,7 @@ export const parseDefaultCollection = (payload: unknown): DefaultCollection => {
   };
 };
 
+// парсинг тега
 export const parseTag = (payload: unknown): Tag => {
   const source = ensureRecord(payload, "tag");
 
@@ -229,6 +249,7 @@ export const parseTag = (payload: unknown): Tag => {
   };
 };
 
+// парсинг связи коллекции и тега
 export const parseCollectionTag = (payload: unknown): CollectionTag => {
   const source = ensureRecord(payload, "collectionTag");
 
@@ -238,6 +259,7 @@ export const parseCollectionTag = (payload: unknown): CollectionTag => {
   };
 };
 
+// парсинг пользовательской коллекции
 export const parseUserCollection = (payload: unknown): UserCollection => {
   const source = ensureRecord(payload, "userCollection");
 
@@ -251,6 +273,7 @@ export const parseUserCollection = (payload: unknown): UserCollection => {
   };
 };
 
+// парсинг карточки из коллекции юзера
 export const parseUserCard = (payload: unknown): UserCard => {
   const source = ensureRecord(payload, "userCard");
 
@@ -262,6 +285,7 @@ export const parseUserCard = (payload: unknown): UserCard => {
   };
 };
 
+// парсинг карточки
 export const parseCard = (payload: unknown): Card => {
   const source = ensureRecord(payload, "card");
 
@@ -272,6 +296,7 @@ export const parseCard = (payload: unknown): Card => {
   };
 };
 
+// парсинг связи карточки и коллекции
 export const parseCardsCollection = (payload: unknown): CardsCollection => {
   const source = ensureRecord(payload, "cardsCollection");
 
@@ -281,6 +306,7 @@ export const parseCardsCollection = (payload: unknown): CardsCollection => {
   };
 };
 
+// парсинг записи об игре
 export const parseGame = (payload: unknown): Game => {
   const source = ensureRecord(payload, "game");
 
@@ -295,6 +321,7 @@ export const parseGame = (payload: unknown): Game => {
   };
 };
 
+// парсинг массива с помощью переданного парсера
 export const parseList = <T>(payload: unknown, parser: (item: unknown) => T, label: string): T[] => {
   if (!Array.isArray(payload)) {
     throw new Error(`${label} must be an array`);

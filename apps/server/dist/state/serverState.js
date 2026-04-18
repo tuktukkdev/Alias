@@ -1,53 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WORD_POOL = exports.GAME_START_DELAY_MS = exports.userRooms = exports.roomTickIntervals = exports.socketPlayers = exports.socketRooms = exports.roomSockets = exports.rooms = void 0;
+exports.GAME_START_DELAY_MS = exports.userRooms = exports.roomTickIntervals = exports.socketPlayers = exports.socketRooms = exports.roomSockets = exports.rooms = void 0;
+// глобальное состояние сервера: комнаты, сокеты, игроки
 exports.rooms = new Map();
 exports.roomSockets = new Map();
 exports.socketRooms = new WeakMap();
 exports.socketPlayers = new WeakMap();
 exports.roomTickIntervals = new Map();
 exports.userRooms = new Map();
+// задержка перед началом игры
 exports.GAME_START_DELAY_MS = 3000;
-exports.WORD_POOL = [
-    "самолет",
-    "дерево",
-    "река",
-    "облако",
-    "молния",
-    "велосипед",
-    "чайник",
-    "крокодил",
-    "компас",
-    "библиотека",
-    "телескоп",
-    "карандаш",
-    "футбол",
-    "радуга",
-    "холодильник",
-    "пианино",
-    "космонавт",
-    "шоколад",
-    "фонарик",
-    "остров",
-    "шторм",
-    "калькулятор",
-    "подушка",
-    "медуза",
-    "картина",
-    "вулкан",
-    "чемодан",
-    "метро",
-    "гитара",
-    "кактус",
-    "пингвин",
-    "песочные часы",
-    "будильник",
-    "водопад",
-    "клавиатура",
-    "вертолет",
-    "пустыня",
-    "корабль",
-    "фейерверк",
-    "мороженое",
-];
 //# sourceMappingURL=serverState.js.map

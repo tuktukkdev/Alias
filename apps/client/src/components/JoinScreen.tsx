@@ -1,6 +1,7 @@
 import { ts } from '../i18n'
 import './JoinScreen.css'
 
+// пропсы экрана входа в комнату
 interface JoinScreenProps {
   name: string
   roomCode: string
@@ -12,6 +13,7 @@ interface JoinScreenProps {
   onCreateRoom: () => void
 }
 
+// экран ввода имени и кода комнаты
 export function JoinScreen({
   name,
   roomCode,

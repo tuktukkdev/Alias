@@ -1,3 +1,4 @@
+// сервис для работы с друзьями и заявками
 import { prisma } from "../db/prisma";
 
 export interface FriendEntry {
@@ -7,10 +8,11 @@ export interface FriendEntry {
 
 export interface FriendsData {
   friends: FriendEntry[];
-  pending: FriendEntry[];   // received, not yet accepted
-  sent: FriendEntry[];      // sent by this user, not yet accepted
+  pending: FriendEntry[];   // входящие заявки
+  sent: FriendEntry[];      // отправленные заявки
 }
 
+// получаем списки друзей и заявок (три запроса параллельно)
 export async function getFriendsData(userId: number): Promise<FriendsData> {
   const [friendRows, pendingRows, sentRows] = await Promise.all([
     prisma.userFriend.findMany({
@@ -38,6 +40,7 @@ export type SendRequestResult =
   | { ok: true }
   | { ok: false; code: "USER_NOT_FOUND" | "ALREADY_FRIENDS" | "REQUEST_EXISTS" | "SELF" };
 
+// отправляем заявку в друзья (если встречная — автопринятие)
 export async function sendFriendRequest(
   fromId: number,
   toUsername: string,
@@ -58,7 +61,7 @@ export async function sendFriendRequest(
   });
   if (existingRequest) return { ok: false, code: "REQUEST_EXISTS" };
 
-  // If the target already sent us a request, accept it automatically
+  // если тот уже отправил нам заявку — принимаем автоматом
   const reverseRequest = await prisma.userFriendRequest.findUnique({
     where: { userIdFrom_userIdTo: { userIdFrom: target.id, userIdTo: fromId } },
   });
@@ -84,6 +87,7 @@ export type AcceptRequestResult =
   | { ok: true }
   | { ok: false; code: "REQUEST_NOT_FOUND" };
 
+// принимаем заявку в друзья (транзакция)
 export async function acceptFriendRequest(
   userId: number,
   fromId: number,
@@ -107,6 +111,7 @@ export type DeclineRequestResult =
   | { ok: true }
   | { ok: false; code: "REQUEST_NOT_FOUND" };
 
+// отклоняем входящую заявку
 export async function declineFriendRequest(
   userId: number,
   fromId: number,
@@ -122,6 +127,7 @@ export async function declineFriendRequest(
   return { ok: true };
 }
 
+// отменяем свою отправленную заявку
 export async function cancelFriendRequest(
   userId: number,
   toId: number,
@@ -137,6 +143,7 @@ export async function cancelFriendRequest(
   return { ok: true };
 }
 
+// удаляем из друзей (обоюдно)
 export async function removeFriend(
   userId: number,
   friendId: number,
@@ -153,6 +160,7 @@ export async function removeFriend(
   return { ok: true };
 }
 
+// считаем количество входящих заявок
 export async function getPendingCount(userId: number): Promise<number> {
   return prisma.userFriendRequest.count({ where: { userIdTo: userId } });
 }

@@ -5,6 +5,7 @@ interface TermsScreenProps {
   onBack: () => void
 }
 
+// страница с условиями использования
 export function TermsScreen({ onBack }: TermsScreenProps) {
   return (
     <main className="infoScreen">

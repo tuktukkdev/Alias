@@ -1,5 +1,6 @@
 import { WebSocket } from "ws";
 
+// игрок в комнате
 export interface Player {
   id: string;
   name: string;
@@ -7,16 +8,19 @@ export interface Player {
   userId?: number;
 }
 
+// статистика игрока за раунд
 export interface PlayerGameStats {
   guessed: number;
   skipped: number;
 }
 
+// выбранная коллекция слов
 export interface SelectedCollection {
   id: number;
   type: 'default' | 'custom';
 }
 
+// настройки комнаты
 export interface GameRoomSettings {
   timer: number;
   winScore: number;
@@ -24,12 +28,14 @@ export interface GameRoomSettings {
   selectedCollections: SelectedCollection[];
 }
 
+// игровая комната
 export interface GameRoom {
   players: Player[];
   hostId: string;
   settings: GameRoomSettings;
 }
 
+// сообщение в чате комнаты
 export interface ChatMessage {
   id: string;
   playerId: string;
@@ -38,11 +44,13 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+// информация о победителе
 export interface WinnerInfo {
   playerId: string;
   playerName: string;
 }
 
+// запись комнаты со всем состоянием игры
 export interface RoomRecord {
   room: GameRoom;
   started: boolean;
@@ -61,12 +69,14 @@ export interface RoomRecord {
   winner: WinnerInfo | null;
 }
 
+// события броадкаста по вебсокетам
 export interface ChatBroadcastEvent {
   type: "chat_message";
   roomId: string;
   message: ChatMessage;
 }
 
+// событие обновления состояния комнаты
 export interface RoomStateBroadcastEvent {
   type: "room_state";
   roomId: string;
@@ -81,12 +91,14 @@ export interface RoomStateBroadcastEvent {
   winner: WinnerInfo | null;
 }
 
+// событие текущего слова
 export interface ActiveWordBroadcastEvent {
   type: "active_word";
   roomId: string;
   word: string | null;
 }
 
+// событие голосового сигнала (webrtc)
 export interface VoiceSignalBroadcastEvent {
   type: "voice_signal";
   roomId: string;
@@ -94,23 +106,27 @@ export interface VoiceSignalBroadcastEvent {
   signal: unknown;
 }
 
+// событие голосового сигнала от клиента
 export interface VoiceSignalClientEvent {
   type: "voice_signal";
   toPlayerId: string;
   signal: unknown;
 }
 
+// тип-объединение всех броадкаст событий
 export type RoomBroadcastEvent =
   | ChatBroadcastEvent
   | RoomStateBroadcastEvent
   | ActiveWordBroadcastEvent
   | VoiceSignalBroadcastEvent;
 
+// интерфейс функций рассылки событий
 export interface RoomBroadcasters {
   broadcastRoomState: (roomId: string, record: RoomRecord) => void;
   broadcastActiveWord: (roomId: string, record: RoomRecord) => void;
 }
 
+// привязка сокета к комнате
 export interface SocketRoomMembership {
   socket: WebSocket;
   roomId: string;

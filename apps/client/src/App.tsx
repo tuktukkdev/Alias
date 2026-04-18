@@ -55,13 +55,14 @@ import {
   setStoredRoomSession,
 } from './utils/roomSession'
 
+// главный компонент приложения
 function App() {
-  /* ── Navigation ──────────────────────────────────────── */
+  // навигация и UI
   const [page, setPage] = useState<'main' | 'profile' | 'friends' | 'collections' | 'howtoplay' | 'terms'>('main')
   const [showStats, setShowStats] = useState(false)
   const [pendingFriendRequests, setPendingFriendRequests] = useState(0)
 
-  /* ── Email verification / password reset via URL token ── */
+  // токен сброса пароля из URL
   const [resetToken, setResetToken] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search)
     const token = params.get('resetToken')
@@ -69,7 +70,7 @@ function App() {
     return token
   })
 
-  /* ── Room / Game State ───────────────────────────────── */
+  // состояние комнаты и игры
   const [name, setName] = useState(() => getStoredAuthUser()?.name ?? '')
   const [roomCode, setRoomCode] = useState(() => getRoomCodeFromPath(window.location.pathname))
   const [playerId, setPlayerId] = useState<string | null>(null)
@@ -85,7 +86,7 @@ function App() {
   const chatListRef = useRef<HTMLUListElement | null>(null)
   const [wsBlocked, setWsBlocked] = useState(false)
 
-  /* ── Auth ─────────────────────────────────────────────── */
+  // авторизация
   const {
     authUser,
     authModal,
@@ -106,7 +107,7 @@ function App() {
     },
   })
 
-  /* ── Voice Chat ──────────────────────────────────────── */
+  // голосовой чат
   const {
     volumeMenu,
     volumeMenuRef,
@@ -123,7 +124,7 @@ function App() {
     gameStartsIn,
   })
 
-  /* ── Derived ─────────────────────────────────────────── */
+  // вычисляемые значения (хост, можно ли стартовать)
   const isHost = useMemo(
     () => !!roomState && !!playerId && roomState.room.hostId === playerId,
     [playerId, roomState],
@@ -134,7 +135,7 @@ function App() {
     [isHost, roomState?.room.players.length, roomState?.started, roomState?.startRequested],
   )
 
-  /* ── Room Actions ────────────────────────────────────── */
+  // подключение к комнате по коду
   const joinRoom = async (options?: {
     playerName?: string
     targetRoomCode?: string
@@ -176,6 +177,7 @@ function App() {
     setStatusMessage(options?.isAutoReconnect ? ts('app.reconnected') : ts('app.joined'))
   }
 
+  // создание новой комнаты
   const createRoom = async () => {
     const trimmedName = name.trim()
     if (!trimmedName) { setStatusMessage(ts('app.enterName')); return }
@@ -198,9 +200,10 @@ function App() {
     setStatusMessage(ts('app.roomCreated'))
   }
 
+  // выход из комнаты и очистка сессии
   const handleExitRoom = async () => {
     if (!roomState || !playerId) return
-    try { await exitRoomRequest(roomState.roomId, playerId, authUser?.id) } catch { /* proceed */ }
+    try { await exitRoomRequest(roomState.roomId, playerId, authUser?.id) } catch { }
     setRoomState(null)
     setPlayerId(null)
     setActiveWord(null)
@@ -209,6 +212,7 @@ function App() {
     window.history.replaceState(null, '', '/')
   }
 
+  // обновление таймера раунда
   const updateTimer = async (nextTimer: number) => {
     if (!roomState || !playerId || !isHost) return
     setRoomState({
@@ -220,6 +224,7 @@ function App() {
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
+  // обновление сложности
   const updateDifficulty = async (nextDifficulty: number) => {
     if (!roomState || !playerId || !isHost) return
     setRoomState({
@@ -231,6 +236,7 @@ function App() {
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
+  // обновление очков для победы
   const updateWinScore = async (nextWinScore: number) => {
     if (!roomState || !playerId || !isHost) return
     setRoomState({
@@ -242,6 +248,7 @@ function App() {
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
+  // запрос сброса пароля
   const handleForgotPassword = async (email: string): Promise<boolean> => {
     try {
       const response = await requestPasswordResetRequest(email)
@@ -251,6 +258,7 @@ function App() {
     }
   }
 
+  // сброс пароля по токену из письма
   const handleResetPassword = async (newPassword: string): Promise<string | null> => {
     if (!resetToken) return ts('app.invalidResetLink')
     try {
@@ -266,6 +274,7 @@ function App() {
     }
   }
 
+  // обновление выбранных коллекций слов
   const updateCollections = async (collections: SelectedCollection[]) => {
     if (!roomState || !playerId || !isHost) return
     setShowCollectionPicker(false)
@@ -274,6 +283,7 @@ function App() {
     setRoomState(mapRoomState(await parseRoomStateResponse(response)))
   }
 
+  // запуск игры
   const startGame = async () => {
     if (!roomState || !playerId || !canStartGame) return
     const response = await startGameRequest(roomState.roomId, playerId)
@@ -283,6 +293,7 @@ function App() {
     setStatusMessage(data.started ? ts('app.gameStarted') : ts('app.waitingPlayers'))
   }
 
+  // отправка сообщения в чат
   const sendChatMessage = async () => {
     if (!roomState || !playerId) return
     const trimmedText = chatInput.trim()
@@ -298,6 +309,7 @@ function App() {
     setChatInput('')
   }
 
+  // пропуск текущего слова
   const skipWord = async () => {
     if (!roomState || !playerId) return
     const response = await skipWordRequest(roomState.roomId, playerId)
@@ -306,7 +318,7 @@ function App() {
     setStatusMessage(ts('app.wordSkipped'))
   }
 
-  /* ── Effects: URL & Auth Sync ────────────────────────── */
+  // синхронизация кода комнаты из URL при навигации
   useEffect(() => {
     const sync = () => {
       const code = getRoomCodeFromPath(window.location.pathname)
@@ -317,24 +329,26 @@ function App() {
     return () => window.removeEventListener('popstate', sync)
   }, [])
 
+  // синхронизация имени из авторизации
   useEffect(() => {
     if (authUser) setName(authUser.name)
   }, [authUser])
 
+  // загрузка счётчика входящих заявок в друзья
   useEffect(() => {
     if (!authUser) { setPendingFriendRequests(0); return }
     const fetchPending = async () => {
       try {
         const res = await fetch(`${API_BASE}/friends/${authUser.id}/pending-count`)
         if (res.ok) setPendingFriendRequests(((await res.json()) as { count: number }).count)
-      } catch { /* ignore */ }
+      } catch { }
     }
     void fetchPending()
     const interval = window.setInterval(() => void fetchPending(), 30000)
     return () => window.clearInterval(interval)
   }, [authUser?.id])
 
-  /* ── Effects: Email verification via URL token ───────── */
+  // верификация email по токену из URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const verifyToken = params.get('verifyToken')
@@ -347,7 +361,7 @@ function App() {
     })
   }, [])
 
-  /* ── Effects: Room Auto-Reconnect ────────────────────── */
+  // автоматическое переподключение к комнате
   useEffect(() => {
     if (roomState) return
     const roomCodeFromPath = getRoomCodeFromPath(window.location.pathname)
@@ -384,34 +398,35 @@ function App() {
               isAutoReconnect: true,
             })
           }
-        } catch { /* non-critical */ }
+        } catch { }
       })()
     }
   }, [roomState, authUser])
 
-  /* ── Effects: Room Polling & Chat ────────────────────── */
+  // поллинг состояния комнаты каждые 2 секунды
   useEffect(() => {
     if (!roomState) return
     const timer = window.setInterval(async () => {
       try {
         const response = await fetchRoomStateRequest(roomState.roomId)
         if (response.ok) setRoomState(mapRoomState(await parseRoomStateResponse(response)))
-      } catch { /* ignore */ }
+      } catch { }
     }, 2000)
     return () => window.clearInterval(timer)
   }, [roomState?.roomId])
 
+  // загрузка истории чата при старте игры
   useEffect(() => {
     if (!roomState?.started) return
     void (async () => {
       try {
         const response = await fetchRoomChatRequest(roomState.roomId)
         if (response.ok) setChatMessages((await parseChatListResponse(response)).messages)
-      } catch { /* ignore */ }
+      } catch { }
     })()
   }, [roomState?.roomId, roomState?.started])
 
-  /* ── Effects: WebSocket ──────────────────────────────── */
+  // вебсокет для получения обновлений в реальном времени
   useEffect(() => {
     if (!roomState || !playerId) return
 
@@ -471,7 +486,7 @@ function App() {
               current.some((m) => m.id === msg.id) ? current : [...current, msg],
             )
           }
-        } catch { /* ignore malformed payloads */ }
+        } catch { }
       }
 
       socket.onclose = () => {
@@ -501,13 +516,14 @@ function App() {
     }
   }, [playerId, roomState?.roomId])
 
+  // автоскролл чата вниз при новых сообщениях
   useEffect(() => {
     if (roomState?.started && chatListRef.current) {
       chatListRef.current.scrollTop = chatListRef.current.scrollHeight
     }
   }, [chatMessages, roomState?.started])
 
-  /* ── Effects: Game Countdown & Active Word ───────────── */
+  // обратный отсчёт до начала раунда
   useEffect(() => {
     if (!roomState?.started || !roomState.startedAt) { setGameStartsIn(0); return }
     const update = () => {
@@ -519,12 +535,13 @@ function App() {
     return () => window.clearInterval(id)
   }, [roomState?.started, roomState?.startedAt])
 
+  // сброс активного слова когда не твой ход
   useEffect(() => {
     if (!roomState?.started) { setActiveWord(null); return }
     if (roomState.currentTurnPlayerId !== playerId) setActiveWord(null)
   }, [playerId, roomState?.started, roomState?.currentTurnPlayerId])
 
-  /* ── Auth Handlers (with room rejoin) ────────────────── */
+  // логин с автоматическим возвратом в комнату
   const onLogin = async (username: string, password: string) => {
     const roomData = await handleLogin(username, password)
     if (roomData) {
@@ -537,6 +554,7 @@ function App() {
     }
   }
 
+  // регистрация с автоматическим возвратом в комнату
   const onRegister = async (username: string, email: string, password: string) => {
     const roomData = await handleRegister(username, email, password)
     if (roomData) {
@@ -549,21 +567,24 @@ function App() {
     }
   }
 
+  // навигация по разделам приложения
   const handleNavigate = (nav: 'profile' | 'friends' | 'stats' | 'collections') => {
     if (nav === 'stats') setShowStats(true)
     else setPage(nav)
   }
 
+  // обновление имени пользователя
   const handleUsernameChanged = (newName: string) => {
     updateAuthUser((prev: AuthUser) => ({ ...prev, name: newName }))
     setName(newName)
   }
 
+  // обновление аватарки
   const handleAvatarChanged = (url: string) => {
     updateAuthUser((prev: AuthUser) => ({ ...prev, avatarUrl: url }))
   }
 
-  /* ── Screen Content ──────────────────────────────────── */
+  // роутинг — выбор экрана для рендера
   const screenContent =
     page === 'profile' && authUser ? (
       <ProfileScreen

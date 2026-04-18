@@ -1,4 +1,4 @@
-/* ── Collections Screen ──────────────────────────────────── */
+/* экран коллекций */
 
 .collectionsScreen {
   flex: 1;
@@ -138,7 +138,7 @@
   color: var(--color-error);
 }
 
-/* ── Create Form ─────────────────────────────────────────── */
+/* форма создания коллекции */
 
 .collectionsCreateSection {
   border-top: 1px solid var(--color-surface-border);
@@ -248,7 +248,7 @@
   background: var(--color-accent-hover);
 }
 
-/* ── Word Editor ─────────────────────────────────────────── */
+/* редактор слов */
 
 .collectionsWordEditorDesc {
   margin: 0;

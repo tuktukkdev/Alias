@@ -3,6 +3,7 @@ import type { AuthUser } from '../types/auth'
 import { currentLang, setLang, ts } from '../i18n'
 import './Header.css'
 
+// пропсы хедера
 interface HeaderProps {
   user: AuthUser | null
   pendingFriendRequests: number
@@ -13,10 +14,12 @@ interface HeaderProps {
   onLogoClick?: () => void
 }
 
+// компонент хедера с меню юзера и кнопками авторизации
 export function Header({ user, pendingFriendRequests, onLoginClick, onRegisterClick, onLogout, onNavigate, onLogoClick }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
+  // закрываем дропдаун по клику вне или escape
   useEffect(() => {
     if (!dropdownOpen) return
 

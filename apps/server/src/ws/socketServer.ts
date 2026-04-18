@@ -7,15 +7,18 @@ import { roomSockets, rooms, socketPlayers, socketRooms } from "../state/serverS
 import { RoomBroadcasters, VoiceSignalBroadcastEvent, VoiceSignalClientEvent } from "../types/game";
 import { addSocketToRoom, broadcastActiveWord, broadcastRoomState, removeSocketFromRoom } from "./broadcast";
 
+// коллбэки для рассылки событий
 const broadcasters: RoomBroadcasters = {
   broadcastRoomState,
   broadcastActiveWord,
 };
 
+// регистрация websocket сервера
 export const registerSocketServer = (server: Server): WebSocketServer => {
   const wss = new WebSocketServer({ server, path: "/ws" });
 
   wss.on("connection", (socket: WebSocket, req: IncomingMessage) => {
+    // парсим roomId и playerId из query-параметров
     const wsUrl = new URL(req.url ?? "/ws", "http://localhost");
     const roomId = wsUrl.searchParams.get("roomId") ?? "";
     const playerId = wsUrl.searchParams.get("playerId") ?? "";
@@ -33,6 +36,7 @@ export const registerSocketServer = (server: Server): WebSocketServer => {
 
     record.connectedPlayerIds.add(playerId);
 
+    // если все подключились и старт запрошен — начинаем игру
     if (record.startRequested && !record.started && allPlayersConnected(record)) {
       void startRoomGame(roomId, record, broadcasters);
     } else {
@@ -42,13 +46,14 @@ export const registerSocketServer = (server: Server): WebSocketServer => {
       }
     }
 
-    // Keep-alive ping every 30s to prevent Cloudflare's 100s idle WebSocket timeout
+    // ping каждые 30с чтобы cloudflare не дропнул сокет
     const pingInterval = setInterval(() => {
       if (socket.readyState === WebSocket.OPEN) {
         socket.ping();
       }
     }, 30000);
 
+    // обработка отключения сокета
     socket.on("close", () => {
       clearInterval(pingInterval);
       const closedRoomId = socketRooms.get(socket);
@@ -70,6 +75,7 @@ export const registerSocketServer = (server: Server): WebSocketServer => {
       }
     });
 
+    // обработка входящих сообщений (голосовые сигналы)
     socket.on("message", (rawPayload) => {
       const sourceRoomId = socketRooms.get(socket);
       const sourcePlayerId = socketPlayers.get(socket);

@@ -1,2 +1,1 @@
-export * from "./domain";
-export * from "./dto";
+// \u0440\u0435\u044d\u043a\u0441\u043f\u043e\u0440\u0442 \u043c\u043e\u0434\u0435\u043b\u0435\u0439 \u0438 dto\nexport * from "./domain";\nexport * from "./dto";
