@@ -1,5 +1,5 @@
+# это скрипт для деплоя на сервер линукс
 name: Deploy to VPS
-
 on:
   push:
     branches: [main]

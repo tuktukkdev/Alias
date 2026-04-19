@@ -8,18 +8,14 @@ packages:
   - ufw
 
 runcmd:
-  # Firewall: allow SSH, HTTP, and UDP for WebRTC
   - ufw allow OpenSSH
   - ufw allow 80/tcp
   - ufw allow 49152:65535/udp
   - ufw --force enable
 
-  # Ensure docker compose plugin is available (Docker marketplace image includes it)
   - docker compose version || apt-get install -y docker-compose-plugin
 
-  # Create app directory
   - mkdir -p /app
 
-  # Print IP so it's visible in console/serial output
   - echo "=== VPS ready. Public IP $(curl -s ifconfig.me) ==="
   - echo "=== Next steps: upload code to /app, create .env, run: docker compose up -d --build ==="
