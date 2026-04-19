@@ -4,7 +4,6 @@ import './styles/common.css'
 import { API_BASE, ROOM_PATH_PREFIX, WS_BASE } from './config/client'
 import { ts } from './i18n'
 import desktopBck from './assets/desktop_bck.svg'
-import mobileBck from './assets/mobile_bck.svg'
 import { AuthModal } from './components/AuthModal'
 import CollectionsScreen from './components/CollectionsScreen'
 import { CollectionPickerModal } from './components/CollectionPickerModal'
@@ -664,10 +663,6 @@ function App() {
 
   return (
     <>
-      <div className="bgLayer" aria-hidden="true">
-        <img className="bgImg bgImgDesktop" src={desktopBck} alt="" />
-        <img className="bgImg bgImgMobile" src={mobileBck} alt="" />
-      </div>
       <div className="appLayout">
       <Header
         user={authUser}
@@ -678,7 +673,12 @@ function App() {
         onNavigate={handleNavigate}
         onLogoClick={!roomState ? () => setPage('main') : undefined}
       />
-      {screenContent}
+      <div className="appContent">
+        <div className="bgLayer" aria-hidden="true">
+          <img className="bgImg" src={desktopBck} alt="" />
+        </div>
+        {screenContent}
+      </div>
       <Footer onNavigate={(p) => setPage(p)} />
       {showStats && authUser && (
         <StatsModal user={authUser} onClose={() => setShowStats(false)} />

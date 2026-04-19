@@ -1,8 +1,24 @@
+.appLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* обёртка между хедером и футером — фон строго в этой области */
+.appContent {
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .bgLayer {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .bgImg {
@@ -14,19 +30,4 @@
   object-position: top center;
 }
 
-.bgImgMobile {
-  display: none;
-}
 
-@media (max-width: 600px) {
-  .bgImgDesktop { display: none; }
-  .bgImgMobile  { display: block; }
-}
-
-.appLayout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  position: relative;
-  z-index: 1;
-}
