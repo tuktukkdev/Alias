@@ -5,10 +5,12 @@ import {
   allPlayersConnected,
   buildRoomStatePayload,
   // endGame,
+  closeRoomFully,
   removePlayerPermanently,
   resolveCurrentWord,
   startRoomGame,
 } from "../services/roomService";
+import { cancelPlayerOfflineTimer } from "../services/socketPresenceService";
 import { createId, getRouteParam, normalizeWord } from "../utils/common";
 import { ChatMessage, GameRoom, Player, RoomBroadcasters, SelectedCollection } from "../types/game";
 import { countCollectionWords } from "../services/wordService";
@@ -158,6 +160,17 @@ export const registerRoomRoutes = (app: Express): void => {
       return res.status(400).json({ error: "name is required" });
     }
 
+    // защита от двойного нажатия для гостей: если игрок с таким именем уже в лобби
+    // и ещё не подключился — переиспользуем его слот вместо создания дубликата
+    if (!requestedPlayerId && !userId) {
+      const nameMatch = record.room.players.find(
+        (p) => p.name === name && !record.connectedPlayerIds.has(p.id),
+      );
+      if (nameMatch) {
+        return res.json({ playerId: nameMatch.id, ...buildRoomStatePayload(roomId, record) });
+      }
+    }
+
     if (userId) {
       const existing = userRooms.get(userId);
       if (existing) {
@@ -190,6 +203,36 @@ export const registerRoomRoutes = (app: Express): void => {
       playerId: player.id,
       ...buildRoomStatePayload(roomId, record),
     });
+  });
+
+  // выход игрока из комнаты
+  app.delete("/rooms/:roomId/players/:playerId", (req: Request, res: Response) => {
+    const roomId = getRouteParam(req.params.roomId);
+    const playerId = getRouteParam(req.params.playerId);
+    const userId = String(req.body?.userId ?? "").trim() || null;
+
+    const record = rooms.get(roomId);
+    if (!record) {
+      return res.status(404).json({ error: "room not found" });
+    }
+
+    const player = record.room.players.find((p) => p.id === playerId);
+    if (!player) {
+      return res.status(404).json({ error: "player not found" });
+    }
+
+    // отменяем таймер кика (игрок выходит добровольно — обрабатываем немедленно)
+    cancelPlayerOfflineTimer(roomId, playerId);
+
+    // закрываем сокеты игрока и удаляем его из комнаты
+    closePlayerSockets(roomId, playerId);
+    removePlayerPermanently(roomId, playerId, broadcasters);
+
+    if (userId) {
+      userRooms.delete(userId);
+    }
+
+    return res.status(204).send();
   });
 
   // получить состояние комнаты

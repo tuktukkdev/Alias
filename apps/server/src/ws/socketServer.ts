@@ -1,7 +1,14 @@
 import { IncomingMessage } from "http";
 import { Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
-import { hasAnotherSocketForPlayer } from "../services/socketPresenceService";
+import {
+  cancelPlayerOfflineTimer,
+  cancelRoomAllOfflineTimer,
+  hasAnotherSocketForPlayer,
+  hasAnyConnectedPlayer,
+  startPlayerOfflineTimer,
+  startRoomAllOfflineTimer,
+} from "../services/socketPresenceService";
 import { allPlayersConnected, startRoomGame } from "../services/roomService";
 import { roomSockets, rooms, socketPlayers, socketRooms } from "../state/serverState";
 import { RoomBroadcasters, VoiceSignalBroadcastEvent, VoiceSignalClientEvent } from "../types/game";
@@ -35,6 +42,10 @@ export const registerSocketServer = (server: Server): WebSocketServer => {
     addSocketToRoom(roomId, socket);
 
     record.connectedPlayerIds.add(playerId);
+
+    // при (пере)подключении отменяем таймеры офлайна для этого игрока и комнаты
+    cancelPlayerOfflineTimer(roomId, playerId);
+    cancelRoomAllOfflineTimer(roomId);
 
     // если все подключились и старт запрошен — начинаем игру
     if (record.startRequested && !record.started && allPlayersConnected(record)) {
@@ -72,6 +83,14 @@ export const registerSocketServer = (server: Server): WebSocketServer => {
       if (!hasAnotherSocketForPlayer(closedRoomId, closedPlayerId, socket)) {
         roomRecord.connectedPlayerIds.delete(closedPlayerId);
         broadcastRoomState(closedRoomId, roomRecord);
+
+        // запускаем 180-секундный таймер кика офлайн-игрока
+        startPlayerOfflineTimer(closedRoomId, closedPlayerId);
+
+        // если теперь все офлайн — запускаем 60-секундный таймер закрытия комнаты
+        if (!hasAnyConnectedPlayer(closedRoomId)) {
+          startRoomAllOfflineTimer(closedRoomId);
+        }
       }
     });
 

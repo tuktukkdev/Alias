@@ -84,6 +84,7 @@ function App() {
 
   const chatSocketRef = useRef<WebSocket | null>(null)
   const chatListRef = useRef<HTMLUListElement | null>(null)
+  const isJoiningRef = useRef(false)
   const [wsBlocked, setWsBlocked] = useState(false)
 
   // авторизация
@@ -142,12 +143,15 @@ function App() {
     existingPlayerId?: string
     isAutoReconnect?: boolean
   }) => {
+    if (isJoiningRef.current) return
+    isJoiningRef.current = true
+    try {
     const trimmedName = (options?.playerName ?? name).trim()
     const trimmedRoomCode = (options?.targetRoomCode ?? roomCode).trim()
     const existingPlayerId = options?.existingPlayerId?.trim()
 
-    if (!trimmedName) { setStatusMessage(ts('app.enterName')); return }
-    if (!trimmedRoomCode) { setStatusMessage(ts('app.enterRoomCode')); return }
+    if (!trimmedName) { setStatusMessage(ts('app.enterName')); isJoiningRef.current = false; return }
+    if (!trimmedRoomCode) { setStatusMessage(ts('app.enterRoomCode')); isJoiningRef.current = false; return }
 
     setStatusMessage(options?.isAutoReconnect ? ts('app.reconnecting') : ts('app.joining'))
     const response = await joinRoomRequest(trimmedRoomCode, trimmedName, existingPlayerId, authUser?.id)
@@ -175,6 +179,9 @@ function App() {
     setStoredRoomSession({ roomId: data.roomId, playerId: data.playerId, name: trimmedName })
     pushRoomPath(data.roomId)
     setStatusMessage(options?.isAutoReconnect ? ts('app.reconnected') : ts('app.joined'))
+    } finally {
+      isJoiningRef.current = false
+    }
   }
 
   // создание новой комнаты

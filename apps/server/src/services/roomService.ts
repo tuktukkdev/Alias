@@ -1,8 +1,22 @@
 // сервис игровой комнаты — основная логика игры
+import { WebSocket } from "ws";
 import { prisma } from "../db/prisma";
-import { GAME_START_DELAY_MS, roomSockets, roomTickIntervals, rooms } from "../state/serverState";
+import {
+  ALL_OFFLINE_CLOSE_MS,
+  GAME_START_DELAY_MS,
+  PLAYER_OFFLINE_KICK_MS,
+  playerOfflineTimers,
+  roomAllOfflineTimers,
+  roomSockets,
+  roomTickIntervals,
+  rooms,
+  userRooms,
+} from "../state/serverState";
 import { Player, PlayerGameStats, RoomBroadcasters, RoomRecord, RoomStateBroadcastEvent, WinnerInfo } from "../types/game";
 import { loadWordPool, pickWordFromPool } from "./wordService";
+
+// экспортируем константы чтобы socketPresenceService мог их использовать
+export { PLAYER_OFFLINE_KICK_MS, ALL_OFFLINE_CLOSE_MS };
 
 // собираем объект состояния комнаты для отправки клиентам
 export const buildRoomStatePayload = (
@@ -30,6 +44,49 @@ export const clearRoomTickInterval = (roomId: string): void => {
 
   clearInterval(interval);
   roomTickIntervals.delete(roomId);
+};
+
+// полностью закрыть комнату: отменить таймеры, закрыть сокеты, удалить из state
+export const closeRoomFully = (roomId: string): void => {
+  const record = rooms.get(roomId);
+
+  clearRoomTickInterval(roomId);
+
+  // отменяем таймеры офлайна для всех игроков и чистим userRooms
+  if (record) {
+    for (const player of record.room.players) {
+      const offlineKey = `${roomId}:${player.id}`;
+      const offlineTimer = playerOfflineTimers.get(offlineKey);
+      if (offlineTimer) {
+        clearTimeout(offlineTimer);
+        playerOfflineTimers.delete(offlineKey);
+      }
+      if (player.userId) {
+        userRooms.delete(String(player.userId));
+      }
+    }
+  }
+
+  // отменяем общий таймер «все офлайн»
+  const allOfflineTimer = roomAllOfflineTimers.get(roomId);
+  if (allOfflineTimer) {
+    clearTimeout(allOfflineTimer);
+    roomAllOfflineTimers.delete(roomId);
+  }
+
+  // удаляем комнату ДО закрытия сокетов — close-хендлеры увидят отсутствие комнаты и выйдут
+  rooms.delete(roomId);
+
+  // закрываем все сокеты
+  const sockets = roomSockets.get(roomId);
+  if (sockets) {
+    for (const socket of sockets) {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        try { socket.close(4010, "room closed"); } catch { }
+      }
+    }
+    roomSockets.delete(roomId);
+  }
 };
 
 // получаем следующее слово из пула
@@ -173,8 +230,14 @@ export const removePlayerPermanently = (
     return;
   }
 
+  // сохраняем игрока до фильтрации чтобы очистить userRooms
+  const removedPlayer = record.room.players.find((p) => p.id === playerId);
   record.room.players = record.room.players.filter((p) => p.id !== playerId);
   record.connectedPlayerIds.delete(playerId);
+
+  if (removedPlayer?.userId) {
+    userRooms.delete(String(removedPlayer.userId));
+  }
 
   if (record.started && record.currentTurnPlayerId === playerId && record.room.players.length > 0) {
     // проверяем победителя перед передачей хода
@@ -202,10 +265,15 @@ export const removePlayerPermanently = (
     record.room.hostId = record.room.players[0].id;
   }
 
+  // нет игроков → закрываем комнату
   if (record.room.players.length === 0) {
-    clearRoomTickInterval(roomId);
-    rooms.delete(roomId);
-    roomSockets.delete(roomId);
+    closeRoomFully(roomId);
+    return;
+  }
+
+  // в лобби остался 1 игрок → комната бессмысленна, закрываем
+  if (!record.started && record.room.players.length === 1) {
+    closeRoomFully(roomId);
     return;
   }
 
