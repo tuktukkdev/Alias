@@ -1,29 +1,57 @@
-# SSH keys — never commit private keys
+# ─── SSH / deployment keys ─────────────────────────────────────
 alias_deploy
 alias_deploy.pub
 *.pem
 id_rsa
 id_ed25519
 
-# Dependencies
+# ─── Dependencies ──────────────────────────────────────────────
+node_modules/
 apps/*/node_modules/
 
-# Build outputs
+# ─── Build outputs ─────────────────────────────────────────────
+dist/
+dist-ssr/
 apps/*/dist/
 apps/*/dist-ssr/
 
-# Environment files
+# ─── Environment files ─────────────────────────────────────────
 .env
+.env.*
+!.env.example
+!.env.development
 apps/.env
 apps/*/.env
 
-# Generated artifacts
-apps/server/src/generated/prisma/
+# ─── Generated artifacts ───────────────────────────────────────
+apps/server/src/generated/
 
-# Source maps
+# ─── Runtime uploads ───────────────────────────────────────────
+apps/server/uploads/
+uploads/
+
+# ─── Source maps ───────────────────────────────────────────────
 *.js.map
-apps/server/dist/index.js.map
-apps/server/dist/index.js.map
-/apps/server/dist
-/apps/server/uploads
-/apps/server/dist
+
+# ─── Logs ──────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── Vite / local overrides ────────────────────────────────────
+*.local
+
+# ─── Editor / OS artifacts ─────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
