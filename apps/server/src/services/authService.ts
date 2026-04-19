@@ -8,14 +8,14 @@ const scryptAsync = promisify(scrypt);
 const SALT_LEN = 16;
 const KEY_LEN = 64;
 
-// хэшируем пароль
+// хэшируем пароль — генерируем соль и прогоняем через scrypt
 async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(SALT_LEN).toString("hex");
   const derivedKey = (await scryptAsync(password, salt, KEY_LEN)) as Buffer;
   return `${salt}:${derivedKey.toString("hex")}`;
 }
 
-// проверяем пароль
+// проверяем пароль — достаём соль, хэшируем и сравниваем через timingSafeEqual
 async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;

@@ -1,4 +1,6 @@
--- -- дефолтные коллекции, теги и карточки
+-- Seed 6 more default collections (2 per difficulty) with tags and 100 cards each
+
+-- ─── Collections ─────────────────────────────────────────────────────────────
 INSERT INTO "default_collections" ("name", "description", "amount_of_cards", "difficulty")
 VALUES
   ('Мебель',     'Предметы мебели и интерьера',           100, 1),
@@ -8,6 +10,7 @@ VALUES
   ('Фильмы',     'Популярные фильмы и кино-персонажи',    100, 3),
   ('Сериалы',    'Популярные сериалы и их персонажи',     100, 3);
 
+-- ─── Tags ────────────────────────────────────────────────────────────────────
 INSERT INTO "tags" ("name")
 VALUES
   ('Мебель'), ('Интерьер'), ('Дом'),
@@ -18,6 +21,7 @@ VALUES
   ('Сериалы'), ('Телевидение')
 ON CONFLICT ("name") DO NOTHING;
 
+-- ─── Tag links ───────────────────────────────────────────────────────────────
 WITH cols AS (
   SELECT id, name FROM "default_collections"
   WHERE name IN ('Мебель','Темы','География','Игры','Фильмы','Сериалы')
@@ -50,6 +54,9 @@ JOIN cols c ON c.name = l.col_name
 JOIN "tags" t ON t.name = l.tag_name
 ON CONFLICT DO NOTHING;
 
+-- ─── Cards ───────────────────────────────────────────────────────────────────
+
+-- Мебель (difficulty 1)
 WITH furniture(word) AS (
   VALUES
     ('стол'),('стул'),('диван'),('кровать'),('шкаф'),('комод'),('полка'),('тумбочка'),('кресло'),('табурет'),
@@ -67,6 +74,7 @@ INSERT INTO "cards" ("word", "difficulty")
 SELECT word, 1 FROM furniture
 ON CONFLICT DO NOTHING;
 
+-- Темы (difficulty 1)
 WITH topics(word) AS (
   VALUES
     ('любовь'),('дружба'),('школа'),('работа'),('дом'),('семья'),('природа'),('здоровье'),('спорт'),('музыка'),
@@ -84,6 +92,7 @@ INSERT INTO "cards" ("word", "difficulty")
 SELECT word, 1 FROM topics
 ON CONFLICT DO NOTHING;
 
+-- География (difficulty 2)
 WITH geo(word) AS (
   VALUES
     ('Москва'),('Санкт-Петербург'),('Новосибирск'),('Екатеринбург'),('Казань'),('Нижний Новгород'),('Челябинск'),('Самара'),('Омск'),('Ростов-на-Дону'),
@@ -101,6 +110,7 @@ INSERT INTO "cards" ("word", "difficulty")
 SELECT word, 2 FROM geo
 ON CONFLICT DO NOTHING;
 
+-- Игры (difficulty 2)
 WITH games(word) AS (
   VALUES
     ('Minecraft'),('Fortnite'),('GTA'),('Tetris'),('Pac-Man'),('Super Mario'),('Zelda'),('Pokemon'),('Sonic'),('Doom'),
@@ -118,6 +128,7 @@ INSERT INTO "cards" ("word", "difficulty")
 SELECT word, 2 FROM games
 ON CONFLICT DO NOTHING;
 
+-- Фильмы (difficulty 3)
 WITH movies(word) AS (
   VALUES
     ('Титаник'),('Аватар'),('Интерстеллар'),('Начало'),('Матрица'),('Гладиатор'),('Бойцовский клуб'),('Тёмный рыцарь'),('Форрест Гамп'),('Список Шиндлера'),
@@ -135,6 +146,7 @@ INSERT INTO "cards" ("word", "difficulty")
 SELECT word, 3 FROM movies
 ON CONFLICT DO NOTHING;
 
+-- Сериалы (difficulty 3)
 WITH series(word) AS (
   VALUES
     ('Игра престолов'),('Во все тяжкие'),('Лучше звоните Солу'),('Чернобыль'),('Шерлок'),('Доктор Хаус'),('Декстер'),('Клан Сопрано'),('Прослушка'),('Настоящий детектив'),
@@ -152,6 +164,9 @@ INSERT INTO "cards" ("word", "difficulty")
 SELECT word, 3 FROM series
 ON CONFLICT DO NOTHING;
 
+-- ─── Link cards to collections ───────────────────────────────────────────────
+
+-- Мебель (difficulty 1)
 WITH col AS (SELECT id FROM "default_collections" WHERE name = 'Мебель' ORDER BY id DESC LIMIT 1),
 words(w) AS (VALUES
   ('стол'),('стул'),('диван'),('кровать'),('шкаф'),('комод'),('полка'),('тумбочка'),('кресло'),('табурет'),
@@ -169,6 +184,7 @@ INSERT INTO "cards_collections" ("collection_id", "card_id")
 SELECT col.id, c.id FROM col, "cards" c JOIN words w ON w.w = c.word AND c.difficulty = 1
 ON CONFLICT DO NOTHING;
 
+-- Темы (difficulty 1)
 WITH col AS (SELECT id FROM "default_collections" WHERE name = 'Темы' ORDER BY id DESC LIMIT 1),
 words(w) AS (VALUES
   ('любовь'),('дружба'),('школа'),('работа'),('дом'),('семья'),('природа'),('здоровье'),('спорт'),('музыка'),
@@ -186,6 +202,7 @@ INSERT INTO "cards_collections" ("collection_id", "card_id")
 SELECT col.id, c.id FROM col, "cards" c JOIN words w ON w.w = c.word AND c.difficulty = 1
 ON CONFLICT DO NOTHING;
 
+-- География (difficulty 2)
 WITH col AS (SELECT id FROM "default_collections" WHERE name = 'География' ORDER BY id DESC LIMIT 1),
 words(w) AS (VALUES
   ('Москва'),('Санкт-Петербург'),('Новосибирск'),('Екатеринбург'),('Казань'),('Нижний Новгород'),('Челябинск'),('Самара'),('Омск'),('Ростов-на-Дону'),
@@ -203,6 +220,7 @@ INSERT INTO "cards_collections" ("collection_id", "card_id")
 SELECT col.id, c.id FROM col, "cards" c JOIN words w ON w.w = c.word AND c.difficulty = 2
 ON CONFLICT DO NOTHING;
 
+-- Игры (difficulty 2)
 WITH col AS (SELECT id FROM "default_collections" WHERE name = 'Игры' ORDER BY id DESC LIMIT 1),
 words(w) AS (VALUES
   ('Minecraft'),('Fortnite'),('GTA'),('Tetris'),('Pac-Man'),('Super Mario'),('Zelda'),('Pokemon'),('Sonic'),('Doom'),
@@ -220,6 +238,7 @@ INSERT INTO "cards_collections" ("collection_id", "card_id")
 SELECT col.id, c.id FROM col, "cards" c JOIN words w ON w.w = c.word AND c.difficulty = 2
 ON CONFLICT DO NOTHING;
 
+-- Фильмы (difficulty 3)
 WITH col AS (SELECT id FROM "default_collections" WHERE name = 'Фильмы' ORDER BY id DESC LIMIT 1),
 words(w) AS (VALUES
   ('Титаник'),('Аватар'),('Интерстеллар'),('Начало'),('Матрица'),('Гладиатор'),('Бойцовский клуб'),('Тёмный рыцарь'),('Форрест Гамп'),('Список Шиндлера'),
@@ -237,6 +256,7 @@ INSERT INTO "cards_collections" ("collection_id", "card_id")
 SELECT col.id, c.id FROM col, "cards" c JOIN words w ON w.w = c.word AND c.difficulty = 3
 ON CONFLICT DO NOTHING;
 
+-- Сериалы (difficulty 3)
 WITH col AS (SELECT id FROM "default_collections" WHERE name = 'Сериалы' ORDER BY id DESC LIMIT 1),
 words(w) AS (VALUES
   ('Игра престолов'),('Во все тяжкие'),('Лучше звоните Солу'),('Чернобыль'),('Шерлок'),('Доктор Хаус'),('Декстер'),('Клан Сопрано'),('Прослушка'),('Настоящий детектив'),

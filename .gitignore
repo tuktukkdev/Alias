@@ -24,6 +24,3 @@ apps/server/src/generated/prisma/
 *.js.map
 apps/server/dist/index.js.map
 apps/server/dist/index.js.map
-/apps/server/dist
-/apps/server/uploads
-/apps/server/dist

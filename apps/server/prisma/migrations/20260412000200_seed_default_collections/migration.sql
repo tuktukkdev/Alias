@@ -1,9 +1,12 @@
--- дефолтные коллекции, теги и карточки
+-- Seed default collections, tags, and cards
+
+-- Create default collections
 INSERT INTO "default_collections" ("name", "description", "amount_of_cards", "difficulty")
 VALUES
   ('Еда', 'Названия блюд и продуктов', 100, 1),
   ('Животные', 'Различные животные мира', 100, 2);
 
+-- Create tags
 INSERT INTO "tags" ("name")
 VALUES
   ('Еда'),
@@ -15,6 +18,7 @@ VALUES
   ('Природа')
 ON CONFLICT ("name") DO NOTHING;
 
+-- Link tags to collections
 WITH collections AS (
   SELECT id, name
   FROM "default_collections"
@@ -38,6 +42,7 @@ LEFT JOIN "collection_tags" ct
   ON ct.collection_id = rl.collection_id AND ct.tag_id = rl.tag_id
 WHERE ct.collection_id IS NULL;
 
+-- Insert 100 food words and 100 animal words into cards
 WITH food_words(word) AS (
   VALUES
     ('борщ'), ('пельмени'), ('вареники'), ('блины'), ('оладьи'), ('сырники'), ('шашлык'), ('плов'), ('солянка'), ('окрошка'),
