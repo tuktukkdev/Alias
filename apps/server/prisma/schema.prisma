@@ -1,8 +1,9 @@
 // описание структуры базы данных
 // генератор prisma клиента
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "commonjs"
 }
 
 // подключение к postgresql
