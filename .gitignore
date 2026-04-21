@@ -26,6 +26,18 @@ apps/*/.env
 # ─── Generated artifacts ───────────────────────────────────────
 apps/server/src/generated/
 
+# ─── Test coverage ─────────────────────────────────────────────
+coverage/
+apps/*/coverage/
+*.lcov
+lcov.info
+lcov-report/
+
+# ─── k6 load test results ──────────────────────────────────────
+results/
+apps/*/tests/load/results/
+*.k6.json
+
 # ─── Runtime uploads ───────────────────────────────────────────
 apps/server/uploads/
 uploads/
