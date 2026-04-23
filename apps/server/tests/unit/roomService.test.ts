@@ -1,7 +1,5 @@
-/**
- * Юнит-тесты для roomService
- * Тестируют: getNextTurnPlayerId, buildRoomStatePayload, allPlayersConnected
- */
+// юнит-тесты для roomService
+// тестируют: getNextTurnPlayerId, buildRoomStatePayload, allPlayersConnected
 
 jest.mock('../../src/db/prisma', () => ({
   prisma: {

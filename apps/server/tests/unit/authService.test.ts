@@ -1,13 +1,11 @@
-/**
- * Юнит-тесты для authService
- * Тестируют: registerUser, loginUser, updatePassword, getUserStats
- * Prisma-клиент подменяется моком — база данных не нужна.
- */
+// юнит-тесты для authService
+// тестируют: registerUser, loginUser, updatePassword, getUserStats
+// prisma-клиент подменяется моком — база данных не нужна
 
 import { promisify } from 'util';
 import { randomBytes, scrypt } from 'crypto';
 
-// ---- Мок prisma -------------------------------------------------------
+// ---- мок prisma -------------------------------------------------------
 jest.mock('../../src/db/prisma', () => ({
   prisma: {
     user: {

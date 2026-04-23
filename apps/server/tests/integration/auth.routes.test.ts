@@ -1,7 +1,5 @@
-/**
- * Интеграционные тесты для /auth/* роутов
- * Supertest + Jest-моки сервисов. База данных не нужна.
- */
+// интеграционные тесты для /auth/* роутов
+// supertest + jest-моки сервисов, база данных не нужна
 
 jest.mock('../../src/services/authService', () => ({
   registerUser: jest.fn(),

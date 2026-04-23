@@ -1,36 +1,22 @@
-/**
- * Нагрузочный тест — игровые комнаты
- * Инструмент: k6 (https://k6.io)
- *
- * Тест проверяет эндпоинты создания комнат, подключения к комнате,
- * получения состояния и чата под нагрузкой.
- *
- * Запуск:
- *   k6 run apps/server/tests/load/room-load.js
- *   k6 run --out json=results/room-load.json apps/server/tests/load/room-load.js
- *
- * Этапы нагрузки:
- *   0–20 с : прогрев 5 VU
- *   20–80 с: стабильная нагрузка 20 VU (симулируем 20 одновременных комнат)
- *   80–100 с: спад
- *
- * Thresholds:
- *   - 95% запросов < 400 мс
- *   - Доля ошибок < 2%
- */
+// нагрузочный тест — игровые комнаты
+// инструмент: k6 (https://k6.io)
+// тест проверяет эндпоинты создания комнат, подключения, состояния и чата под нагрузкой
+// запуск: k6 run apps/server/tests/load/room-load.js
+// этапы: 0–20с прогрев 5 VU, 20–80с стабильно 20 VU, 80–100с спад
+// пороги: p95 < 400 мс, доля ошибок < 2%
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Counter, Rate, Trend } from 'k6/metrics';
 import { fail } from 'k6';
 
-// ---- Кастомные метрики ------------------------------------------------
+// ---- кастомные метрики ------------------------------------------------
 const roomCreateErrors = new Counter('room_create_errors');
 const roomJoinErrors   = new Counter('room_join_errors');
 const errorRate        = new Rate('error_rate');
 const stateLatency     = new Trend('room_state_latency_ms', true);
 
-// ---- Конфигурация нагрузки --------------------------------------------
+// ---- конфигурация нагрузки --------------------------------------------
 export const options = {
   stages: [
     { duration: '20s', target: 5  },  // прогрев
@@ -46,24 +32,24 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 const JSON_HEADERS = { headers: { 'Content-Type': 'application/json' } };
 
-// Проверяем доступность сервера перед стартом теста
+// проверяем доступность сервера перед стартом теста
 export function setup() {
   const res = http.get(`${BASE_URL}/`, { timeout: '5s' });
   if (res.status === 0) {
     fail(
-      `Сервер недоступен по адресу ${BASE_URL}.\n` +
-      `Запустите сервер перед нагрузочным тестом:\n` +
+      `сервер недоступен по адресу ${BASE_URL}\n` +
+      `запустите сервер перед нагрузочным тестом\n` +
       `  cd apps/server && npm run dev`
     );
   }
 }
 
-// ---- Сценарий виртуального пользователя --------------------------------
+// ---- сценарий виртуального пользователя --------------------------------
 export default function () {
   const uid  = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const name = `LoadPlayer_${uid}`;
 
-  // --- 1. Создание комнаты ---
+  // --- 1. создание комнаты ---
   const createRes = http.post(
     `${BASE_URL}/rooms`,
     JSON.stringify({ name }),   // поле называется "name", не "playerName"
@@ -100,7 +86,7 @@ export default function () {
 
   sleep(0.3);
 
-  // --- 2. Получение состояния комнаты ---
+  // --- 2. получение состояния комнаты ---
   const stateStart = Date.now();
   const stateRes   = http.get(`${BASE_URL}/rooms/${roomId}`);
   stateLatency.add(Date.now() - stateStart);
@@ -114,7 +100,7 @@ export default function () {
 
   sleep(0.3);
 
-  // --- 3. Второй игрок подключается к комнате ---
+  // --- 3. второй игрок подключается к комнате ---
   const joinName = `Guest_${uid}`;
   const joinRes  = http.post(
     `${BASE_URL}/rooms/${roomId}/join`,
@@ -138,7 +124,7 @@ export default function () {
 
   sleep(0.3);
 
-  // --- 4. Получение истории чата ---
+  // --- 4. получение истории чата ---
   const chatHistoryRes = http.get(`${BASE_URL}/rooms/${roomId}/chat`);
   check(chatHistoryRes, {
     'история чата: статус 200':      (r) => r.status === 200,
@@ -149,7 +135,7 @@ export default function () {
 
   sleep(0.3);
 
-  // --- 5. Выход из комнаты ---
+  // --- 5. выход из комнаты ---
   http.del(`${BASE_URL}/rooms/${roomId}/players/${playerId}`);
 
   sleep(0.2);

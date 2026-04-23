@@ -1,8 +1,6 @@
-/**
- * Юнит-тесты для wordService
- * Тестируют: pickWordFromPool, loadWordPool
- * Prisma и cacheService заменяются моками.
- */
+// юнит-тесты для wordService
+// тестируют: pickWordFromPool, loadWordPool
+// prisma и cacheService заменяются моками
 
 jest.mock('../../src/db/prisma', () => ({
   prisma: {

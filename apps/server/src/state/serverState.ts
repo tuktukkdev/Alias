@@ -9,10 +9,10 @@ export const socketPlayers = new WeakMap<WebSocket, string>();
 export const roomTickIntervals = new Map<string, NodeJS.Timeout>();
 export const userRooms = new Map<string, { roomId: string; playerId: string }>();
 
-// таймеры кика игроков при долгом офлайне (ключ: `${roomId}:${playerId}`)
+// таймеры кика игроков при долгом офлайне 
 export const playerOfflineTimers = new Map<string, NodeJS.Timeout>();
 
-// таймер закрытия комнаты когда все офлайн (ключ: roomId)
+// таймер закрытия комнаты когда все офлайн  roomId
 export const roomAllOfflineTimers = new Map<string, NodeJS.Timeout>();
 
 // задержка перед началом игры
