@@ -30,9 +30,11 @@ apps/server/
 │   │   └── roomService.test.ts    # 5 тест-кейсов
 │   ├── integration/
 │   │   └── auth.routes.test.ts   # 7 тест-кейсов (HTTP)
-│   └── load/
-│       ├── auth-load.js           # k6: регистрация + вход
-│       └── room-load.js           # k6: комнаты + чат
+│   ├── load/
+│   │   ├── auth-load.js           # k6: регистрация + вход
+│   │   └── room-load.js           # k6: комнаты + чат
+│   └── postman/
+│       └── Alias.postman_collection.json  # 24 запроса, 53 проверки
 ```
 
 ---
@@ -459,3 +461,26 @@ k6 run -e BASE_URL=https://bluefieldapps.com apps/server/tests/load/room-load.js
 # С сохранением результатов в JSON
 k6 run --out json=results.json apps/server/tests/load/room-load.js
 ```
+
+---
+
+## 10. API-тесты в Postman
+
+Коллекция: [`tests/postman/Alias.postman_collection.json`](postman/Alias.postman_collection.json) — 24 запроса, 53 проверки.
+
+| Папка | Что проверяется |
+|---|---|
+| 1. Авторизация | Регистрация и вход: позитивные сценарии, занятый username, пустые поля, некорректный email, граничные значения длины пароля (5 и 21 символ) и username (16 символов), недопустимые символы (SQL-инъекция), статистика пользователя |
+| 2. Игровые комнаты | Создание комнаты, вход второго игрока, старт игры только хостом (403 для гостя), минимум 2 игрока (400), чат до начала игры, несуществующая комната (404) |
+| 3. Коллекции слов | Стандартные и пользовательские коллекции |
+
+Запросы связаны между собой: `userId`, `roomId` и `playerId` сохраняются в переменные коллекции и передаются в следующие запросы. Каждый запрос проверяет HTTP-код, структуру и текст ошибки; ключевые запросы — время ответа < 1000 мс.
+
+Запуск: импортировать коллекцию в Postman и выполнить через Collection Runner, или из консоли:
+
+```bash
+npm install -g newman
+newman run apps/server/tests/postman/Alias.postman_collection.json
+```
+
+Результат при локальном запуске: **24/24 запросов, 53/53 проверок пройдено**.
