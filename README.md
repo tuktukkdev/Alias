@@ -24,9 +24,18 @@
 | Инфраструктура | Docker Compose, nginx, CI/CD через GitHub Actions, VPS |
 | Тестирование | Jest, Supertest, Postman / Newman, k6 |
 
+## Документация
+
+| Документ | Что внутри |
+|---|---|
+| [TEST_CASES.md](TEST_CASES.md) | Стратегия тестирования, ручные тест-кейсы TC_01–TC_05, итоги, дефекты, скриншоты прогонов |
+| [apps/server/tests/TEST_REPORT.md](apps/server/tests/TEST_REPORT.md) | Полный отчёт о тестировании: unit, интеграционные, ручные, нагрузочные, API (Postman) |
+| [REPORT.md](REPORT.md) | Курсовой проект в Markdown |
+| [Alias_kursovoy_proekt.pdf](Alias_kursovoy_proekt.pdf) | Курсовой проект (PDF) |
+
 ## Тестирование
 
-Подробный отчёт: [`apps/server/tests/TEST_REPORT.md`](apps/server/tests/TEST_REPORT.md)
+Подробный отчёт: [`apps/server/tests/TEST_REPORT.md`](apps/server/tests/TEST_REPORT.md), ручные тест-кейсы: [`TEST_CASES.md`](TEST_CASES.md)
 
 | Вид | Инструмент | Объём | Результат |
 |---|---|---|---|
